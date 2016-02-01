@@ -91,10 +91,10 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
     if(!quiet) message(command)
     if(quiet) {
       suppressMessages(suppressWarnings({
-        utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
+        utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = TRUE)), stringsAsFactors = FALSE)
       }))
     } else {
-      utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
+      utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = TRUE)), stringsAsFactors = FALSE)
     }
   })
 }
@@ -124,7 +124,8 @@ exiftool.call <- function(args=c("--help"), fnames=NULL, perlpath=NULL, intern=F
 #private helper command
 exiftool.command <- function(args, fnames, perlpath=NULL) {
   if(is.null(perlpath)) {
-    perlpaths <- c("perl", "c:\\Perl64\\bin\\perl", "c:\\Perl32\\bin\\perl")
+    perlpaths <- c("perl", "C:\\Perl64\\bin\\perl", "C:\\Perl32\\bin\\perl",
+                   "c:\\Strawberry\\perl\\bin\\perl")
     suppressMessages({
     suppressWarnings({
       for(pp in perlpaths) {
