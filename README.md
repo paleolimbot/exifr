@@ -11,7 +11,7 @@ exifr("my_file.jpg")
 
 ## Installation
 
-[ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) is written in Perl, so if you are on windows you need to install Perl before installing `exifr` (easily done from [Active State](http://www.activestate.com/activeperl): [64-Bit](http://www.activestate.com/activeperl/downloads/thank-you?dl=http://downloads.activestate.com/ActivePerl/releases/5.20.3.2003/ActivePerl-5.20.3.2003-MSWin32-x64-299574.msi) (most users), [32-Bit](http://www.activestate.com/activeperl/downloads/thank-you?dl=http://downloads.activestate.com/ActivePerl/releases/5.20.3.2003/ActivePerl-5.20.3.2003-MSWin32-x86-64int-299574.msi) (advanced)). Mac and linux users already have this installed. To install the `{exifr}` package, use the `devtools::install_github()` command like this:
+[ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) is written in Perl, so if you are on windows you need to install Perl before installing `exifr` (easily done from [Strawberry Perl](http://www.strawberryperl.com/): [64-Bit](http://strawberryperl.com/download/5.22.1.2/strawberry-perl-5.22.1.2-64bit.msi) (most users), [32-Bit](http://strawberryperl.com/download/5.22.1.2/strawberry-perl-5.22.1.2-32bit.msi) (advanced)). Mac and linux users already have this installed. To install the `{exifr}` package, use the `devtools::install_github()` command like this:
 
 ```R
 install.packages("devtools") # if you don't already have devtools installed

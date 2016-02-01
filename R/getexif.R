@@ -124,7 +124,7 @@ exiftool.call <- function(args=c("--help"), fnames=NULL, perlpath=NULL, intern=F
 #private helper command
 exiftool.command <- function(args, fnames, perlpath=NULL) {
   if(is.null(perlpath)) {
-    perlpaths <- c("perl", "C:\\Perl64\\bin\\perl", "C:\\Perl32\\bin\\perl",
+    perlpaths <- c("perl", "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
                    "c:\\Strawberry\\perl\\bin\\perl")
     suppressMessages({
     suppressWarnings({
