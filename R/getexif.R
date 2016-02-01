@@ -81,7 +81,13 @@ exifr <- function(filename, quiet=TRUE, exiftoolargs=NULL, perlpath=NULL) {
   message("Running ", length(commands), " commands")
   return(foreach(command=commands, .combine=plyr::rbind.fill, .multicombine=TRUE) %do% {
     if(!quiet) message(command)
-    utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
+    if(quiet) {
+      suppressMessages(suppressWarnings({
+        utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
+      }))
+    } else {
+      utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
+    }
   })
 }
 
