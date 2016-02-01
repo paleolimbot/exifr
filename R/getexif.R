@@ -66,7 +66,7 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
   filenameslist <- list(filename)
   nominallen <- length(filename)
   commands <- foreach(fnames=filenameslist, .combine=c) %do% {
-    exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames)
+    exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames, perlpath=perlpath)
   }
   while(any(nchar(commands) >= commandlength) && commandlength != 0 && nominallen >= 2) {
     #subdivide files until all commands are less than commandlength
@@ -82,7 +82,7 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
       filename[minind:maxind]
     }
     commands <- foreach(fnames=filenameslist, .combine=c) %do% {
-      exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames)
+      exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames, perlpath = perlpath)
     }
   }
 
