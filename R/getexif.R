@@ -24,6 +24,7 @@
 #' @param quiet \code{FALSE} if status updates are desired, \code{TRUE}
 #'   otherwise.
 #' @param exiftoolargs a list of args to be passed to ExifTool (e.g. \code{c("-filename", "-imagesize")})
+#' @param perlpath the location of the perl interpreter. \code{NULL} for autodetect.
 #'
 #' @return A \code{data.frame} of photo EXIF information.
 #'
@@ -34,7 +35,7 @@
 #'
 #' @export
 #'
-exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL) {
+exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL, perlpath=NULL) {
   fnames <- NULL ; rm(fnames); i <-NULL; rm(i); command <- NULL; rm(command)
 
   if(length(filename) == 0) {
@@ -90,6 +91,7 @@ exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL) {
 
 #' @param args a list of non-shell quoted arguments (e.g. \code{-n -csv})
 #' @param fnames a list of filenames (\code{shQuote()} will be applied to this vector)
+#' @param perlpath the location of the perl interpreter. \code{NULL} for autodetect.
 #' @param intern \code{TRUE} if output should be returned as a character vector.
 #' @param ... additional arguments to be passed to \code{system()}
 #'
@@ -100,17 +102,33 @@ exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL) {
 #' @examples
 #' exiftool.call("--help")
 #'
-exiftool.call <- function(args=c("--help"), fnames=NULL, intern=FALSE, ...) {
-  system(exiftool.command(args, fnames), intern=intern, ...)
+exiftool.call <- function(args=c("--help"), fnames=NULL, perlpath=NULL, intern=FALSE, ...) {
+  system(exiftool.command(args, fnames, perlpath=perlpath), intern=intern, ...)
 }
 
 
 #private helper command
-exiftool.command <- function(args, fnames) {
+exiftool.command <- function(args, fnames, perlpath=NULL) {
+  if(is.null(perlpath)) {
+    perlpaths <- c("perl", "c:\\Perl64\\bin\\perl", "c:\\Perl32\\bin\\perl")
+    for(pp in perlpaths) {
+      if(system(paste(pp, "--version"),
+                ignore.stdout = TRUE, ignore.stderr = TRUE) == 0) {
+        perlpath <- pp
+        break
+      }
+    }
+
+    if(is.null(perlpath)) {
+      stop("Perl is not installed at any of the following locations: ",
+           paste(perlpaths, collapse=" "))
+    }
+  }
+
   exiftoolpath <- file.path(path.package("exifr"), "exiftool/exiftool.pl")
   if(length(fnames) > 0) {
-    paste("perl", shQuote(exiftoolpath), paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
+    paste(perlpath, shQuote(exiftoolpath), paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
   } else {
-    paste("perl", shQuote(exiftoolpath), paste(args, collapse=" "))
+    paste(perlpath, shQuote(exiftoolpath), paste(args, collapse=" "))
   }
 }
