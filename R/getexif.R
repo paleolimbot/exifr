@@ -111,15 +111,16 @@ exiftool.call <- function(args=c("--help"), fnames=NULL, perlpath=NULL, intern=F
 exiftool.command <- function(args, fnames, perlpath=NULL) {
   if(is.null(perlpath)) {
     perlpaths <- c("perl", "c:\\Perl64\\bin\\perl", "c:\\Perl32\\bin\\perl")
+    suppressMessages({
     suppressWarnings({
       for(pp in perlpaths) {
         if(system(paste(pp, "--version"),
-                  ignore.stdout = TRUE, ignore.stderr = TRUE) == 0) {
+                  ignore.stdout = TRUE, ignore.stderr = TRUE, show.output.on.console = FALSE) == 0) {
           perlpath <- pp
           break
         }
       }
-    })
+    })})
 
     if(is.null(perlpath)) {
       stop("Perl is not installed at any of the following locations: ",
