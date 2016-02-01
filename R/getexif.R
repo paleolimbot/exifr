@@ -35,7 +35,7 @@
 #'
 #' @export
 #'
-exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL, perlpath=NULL) {
+exifr <- function(filename, quiet=TRUE, exiftoolargs=NULL, perlpath=NULL) {
   fnames <- NULL ; rm(fnames); i <-NULL; rm(i); command <- NULL; rm(command)
 
   if(length(filename) == 0) {
@@ -53,7 +53,7 @@ exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL, perlpath=NULL) {
     commandlength <- 50*1024
   }
 
-  if(!quiet) message("Generating command line arguments...")
+  message("Generating command line arguments...")
 
   filenameslist <- list(filename)
   nominallen <- length(filename)
@@ -78,7 +78,7 @@ exifr <- function(filename, quiet=FALSE, exiftoolargs=NULL, perlpath=NULL) {
     }
   }
 
-  if(!quiet) message("Running ", length(commands), " commands")
+  message("Running ", length(commands), " commands")
   return(foreach(command=commands, .combine=plyr::rbind.fill, .multicombine=TRUE) %do% {
     if(!quiet) message(command)
     utils::read.csv(textConnection(system(command, intern=TRUE, ignore.stderr = quiet)), stringsAsFactors = FALSE)
