@@ -25,7 +25,6 @@
 #' @param quiet \code{FALSE} if status updates are desired, \code{TRUE}
 #'   otherwise.
 #' @param exiftoolargs a list of args to be passed to ExifTool (e.g. \code{c("-filename", "-imagesize")})
-#' @param perlpath the location of the perl interpreter. \code{NULL} for autodetect.
 #'
 #' @return A \code{data.frame} of photo EXIF information.
 #'
@@ -39,7 +38,7 @@
 #'
 #' @export
 #'
-exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perlpath=NULL) {
+exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL) {
   fnames <- NULL ; rm(fnames); i <-NULL; rm(i); command <- NULL; rm(command)
 
   if(length(filename) == 0) {
@@ -66,7 +65,7 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
   filenameslist <- list(filename)
   nominallen <- length(filename)
   commands <- foreach(fnames=filenameslist, .combine=c) %do% {
-    exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames, perlpath=perlpath)
+    exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames)
   }
   while(any(nchar(commands) >= commandlength) && commandlength != 0 && nominallen >= 2) {
     #subdivide files until all commands are less than commandlength
@@ -82,7 +81,7 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
       filename[minind:maxind]
     }
     commands <- foreach(fnames=filenameslist, .combine=c) %do% {
-      exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames, perlpath = perlpath)
+      exiftool.command(args=c("-n", "-csv", "-q", exiftoolargs), fnames)
     }
   }
 
@@ -105,7 +104,6 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
 
 #' @param args a list of non-shell quoted arguments (e.g. \code{-n -csv})
 #' @param fnames a list of filenames (\code{shQuote()} will be applied to this vector)
-#' @param perlpath the location of the perl interpreter. \code{NULL} for autodetect.
 #' @param intern \code{TRUE} if output should be returned as a character vector.
 #' @param ... additional arguments to be passed to \code{system()}
 #'
@@ -116,37 +114,18 @@ exifr <- function(filename, recursive=FALSE, quiet=TRUE, exiftoolargs=NULL, perl
 #' @examples
 #' exiftool.call("--help")
 #'
-exiftool.call <- function(args=c("--help"), fnames=NULL, perlpath=NULL, intern=FALSE, ...) {
-  system(exiftool.command(args, fnames, perlpath=perlpath), intern=intern, ...)
+exiftool.call <- function(args=c("--help"), fnames=NULL, intern=FALSE, ...) {
+  system(exiftool.command(args, fnames), intern=intern, ...)
 }
 
 
 #private helper command
-exiftool.command <- function(args, fnames, perlpath=NULL) {
-  if(is.null(perlpath)) {
-    perlpaths <- c("perl", "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
-                   "c:\\Strawberry\\perl\\bin\\perl")
-    suppressMessages({
-    suppressWarnings({
-      for(pp in perlpaths) {
-        if(system(paste(pp, "--version"),
-                  ignore.stdout = TRUE, ignore.stderr = TRUE, show.output.on.console = FALSE) == 0) {
-          perlpath <- pp
-          break
-        }
-      }
-    })})
-
-    if(is.null(perlpath)) {
-      stop("Perl is not installed at any of the following locations: ",
-           paste(perlpaths, collapse=" "))
-    }
-  }
-
-  exiftoolpath <- file.path(path.package("exifr"), "exiftool/exiftool.pl")
+exiftool.command <- function(args, fnames) {
+  exiftoolpath <- options(exifr.exiftoolcommand)$exifr.exiftoolcommand
+  if(is.null(exiftoolpath)) stop("ExifTool not properly installed")
   if(length(fnames) > 0) {
-    paste(perlpath, shQuote(exiftoolpath), paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
+    paste(exiftoolpath, paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
   } else {
-    paste(perlpath, shQuote(exiftoolpath), paste(args, collapse=" "))
+    paste(exiftoolpath, paste(args, collapse=" "))
   }
 }

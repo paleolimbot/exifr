@@ -4,15 +4,12 @@
 \alias{exiftool.call}
 \title{Call exiftool from R}
 \usage{
-exiftool.call(args = c("--help"), fnames = NULL, perlpath = NULL,
-  intern = FALSE, ...)
+exiftool.call(args = c("--help"), fnames = NULL, intern = FALSE, ...)
 }
 \arguments{
 \item{args}{a list of non-shell quoted arguments (e.g. \code{-n -csv})}
 
 \item{fnames}{a list of filenames (\code{shQuote()} will be applied to this vector)}
-
-\item{perlpath}{the location of the perl interpreter. \code{NULL} for autodetect.}
 
 \item{intern}{\code{TRUE} if output should be returned as a character vector.}
 
