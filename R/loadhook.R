@@ -1,6 +1,16 @@
 
 #.onLoad hook for when namespace is loaded
 .onLoad <- function(libname, pkgname) {
+  configureExifTool(quiet=FALSE)
+}
+
+.onUnload <- function(libpath) {
+  #remove "exifr.exiftoolcommand" option
+  options(exifr.exiftoolcommand=NULL)
+}
+
+
+configureExifTool <- function(quiet=TRUE) {
   #find command, will throw error if perl is not installed
   command <- findExifToolCommand(quiet=FALSE)
   if(is.null(command)) {
@@ -15,12 +25,6 @@
     options(exifr.exiftoolcommand=command)
   }
 }
-
-.onUnload <- function(libpath) {
-  #remove "exifr.exiftoolcommand" option
-  options(exifr.exiftoolcommand=NULL)
-}
-
 
 findExifToolCommand <- function(quiet=TRUE) {
   #try straight-up exiftool command
@@ -102,7 +106,7 @@ installExifTool <- function(quiet=TRUE) {
     }
     #unzip
     if(!quiet) message("Extracting ExifTool to ", installloc)
-    unzip(zipfile, installloc)
+    unzip(zipfile, installloc, overwrite = TRUE)
     #remove zip file
     unlink(zipfile)
     #return success
