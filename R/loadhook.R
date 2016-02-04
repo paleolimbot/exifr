@@ -13,7 +13,7 @@ configureExifTool <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) 
     #always message before download/install
     message("ExifTool not found, attempting to install from paleolimbot.github.io/exifr")
     installExifTool(libname, pkgname, quiet=quiet)
-    command <- findExifToolCommand(libname, pkgname, quiet=quiet)
+    command <- findExifToolCommand(libname, pkgname, quiet=quiet, forceInstall=forceInstall)
   }
 
   if(is.null(command)) {
