@@ -121,7 +121,7 @@ exiftool.call <- function(args=c("--help"), fnames=NULL, intern=FALSE, ...) {
 
 #private helper command
 exiftool.command <- function(args, fnames) {
-  exiftoolpath <- options(exifr.exiftoolcommand)$exifr.exiftoolcommand
+  exiftoolpath <- options("exifr.exiftoolcommand")$exifr.exiftoolcommand
   if(is.null(exiftoolpath)) stop("ExifTool not properly installed")
   if(length(fnames) > 0) {
     paste(exiftoolpath, paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
