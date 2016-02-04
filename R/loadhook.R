@@ -31,7 +31,8 @@ findExifToolCommand <- function(quiet=TRUE) {
   } else {
     #find Perl, check default install location
     if(!quiet) message("Checking Perl installation")
-    perlpaths <- c("perl", "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
+    perlpaths <- c(options("exifr.perlpath")$exifr.perlpath, "perl",
+                   "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
                    "c:\\Strawberry\\perl\\bin\\perl")
     perlpath <- NULL
     for(pp in perlpaths) {
@@ -43,7 +44,8 @@ findExifToolCommand <- function(quiet=TRUE) {
     }
     if(is.null(perlpath)) {
       stop("Perl is required for exifr and was not found at any of the following locations: ",
-           paste(perlpaths, collapse=" "))
+           paste(perlpaths, collapse=" "),
+           ". Specify perl location by setting options(exifr.perlpath='my/path/to/perl')")
     }
     if(!quiet) message("Found perl at ", perlpath, "; looking for ExifTool")
     #look for exiftool/exiftool.pl in two locations:
