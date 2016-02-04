@@ -70,11 +70,11 @@ testCommand <- function(command) {
 }
 
 installExifTool <- function(quiet=TRUE) {
-  installocs <- c(path.package("exifr"), path.expand("~"))
+  installlocs <- c(path.package("exifr"), path.expand("~"))
   exiftoolurl <- "http://paleolimbot.github.io/exifr/exiftool.zip"
   #check for a writable install location
   if(!quiet) message("Checking for writable install location")
-  installoc <- NULL
+  installloc <- NULL
   for(il in installlocs) {
     if(file.access(il, mode=2)) {
       installloc <- il
@@ -84,14 +84,14 @@ installExifTool <- function(quiet=TRUE) {
 
   if(is.null(installloc)) {
     stop("Could not find writable install location to install ExifTool: tried ",
-         paste(installocs, collapse=" "))
+         paste(installlocs, collapse=" "))
   }
 
   if(!quiet) message("Attempting to install ExifTool to ", installloc)
 
   #download exiftool zip
   tryCatch({
-    zipfile <- file.path(installoc, "exiftool.zip")
+    zipfile <- file.path(installloc, "exiftool.zip")
     if(!quiet) message("Downloading ExifTool from ", exiftoolurl)
     download.file(exiftoolurl, zipfile, quiet = quiet)
     #check download
