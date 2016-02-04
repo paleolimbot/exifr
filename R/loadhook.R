@@ -1,22 +1,19 @@
 
 #.onLoad hook for when namespace is loaded
 .onLoad <- function(libname, pkgname) {
-  configureExifTool(quiet=FALSE)
+  configureExifTool(libname, pkgname, quiet=FALSE, forceInstall=FALSE)
 }
 
-.onUnload <- function(libpath) {
-  #remove "exifr.exiftoolcommand" option
-  options(exifr.exiftoolcommand=NULL)
-}
-
-
-configureExifTool <- function(quiet=TRUE, forceInstall=FALSE) {
+configureExifTool <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) {
   #find command, will throw error if perl is not installed
-  command <- findExifToolCommand(quiet=FALSE, forceInstall=forceInstall)
+  command <- findExifToolCommand(libname, pkgname, quiet=quiet, forceInstall=forceInstall)
   if(is.null(command) || forceInstall) {
     #try downloading/installing exiftool
-    installExifTool(quiet=FALSE)
-    command <- findExifToolCommand(quiet=FALSE)
+    if(forceInstall && !quiet) message("Forcing download/install")
+    #always message before download/install
+    message("ExifTool not found, attempting to install from paleolimbot.github.io/exifr")
+    installExifTool(libname, pkgname, quiet=quiet)
+    command <- findExifToolCommand(libname, pkgname, quiet=quiet)
   }
 
   if(is.null(command)) {
@@ -26,9 +23,9 @@ configureExifTool <- function(quiet=TRUE, forceInstall=FALSE) {
   }
 }
 
-findExifToolCommand <- function(quiet=TRUE, forceInstall=FALSE) {
+findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) {
   #try straight-up exiftool command
-  if(!quiet) message("Trying 'exiftool' on the console")
+  if(!quiet) message("Trying 'exiftool' on the console...")
   if(testCommand("exiftool --version") && !forceInstall) {
     if(!quiet) message("Found")
     return("exiftool")
@@ -53,9 +50,10 @@ findExifToolCommand <- function(quiet=TRUE, forceInstall=FALSE) {
     }
     if(!quiet) message("Found perl at ", perlpath, "; looking for ExifTool")
     #look for exiftool/exiftool.pl in two locations:
-    #file.path(path.package("exifr"), ".exiftool/exiftool.pl"), and file.path("~", ".exiftool/exiftool.pl")
-    commands <- c(paste(perlpath, file.path(path.package("exifr"), ".exiftool/exiftool.pl")),
-                  paste(perlpath, file.path("~", ".exiftool/exiftool.pl")))
+    #file.path(libname, pkgname, "exiftool/exiftool.pl"), and file.path("~", "exiftool/exiftool.pl")
+    #remember to shellquote filenames!
+    commands <- c(paste(perlpath, shQuote(file.path(libname, pkgname, "exiftool/exiftool.pl"))),
+                  paste(perlpath, shQuote(file.path("~", "exiftool/exiftool.pl"))))
 
     for(command in commands) {
       if(testCommand(paste(command, "--version"))) {
@@ -75,18 +73,22 @@ testCommand <- function(command) {
                                                   ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
 }
 
-installExifTool <- function(quiet=TRUE) {
-  installlocs <- c(path.package("exifr"), path.expand("~"))
+installExifTool <- function(libname, pkgname, quiet=TRUE) {
+  installlocs <- c(file.path(libname, pkgname), path.expand("~"))
   exiftoolurl <- "http://paleolimbot.github.io/exifr/exiftool.zip"
   #check for a writable install location
-  if(!quiet) message("Checking for writable install location")
+  if(!quiet) message("Checking for writable install location...")
   installloc <- NULL
   for(il in installlocs) {
-    if(file.access(il, mode=2)) {
+    testfile <- file.path(il, ".dummyfile")
+    file.create(testfile, showWarnings = FALSE)
+    if(file.exists(testfile)) {
+      unlink(testfile)
       installloc <- il
       break
     }
   }
+  installloc <- installlocs[1]
 
   if(is.null(installloc)) {
     stop("Could not find writable install location to install ExifTool: tried ",
@@ -99,14 +101,14 @@ installExifTool <- function(quiet=TRUE) {
   tryCatch({
     zipfile <- file.path(installloc, "exiftool.zip")
     if(!quiet) message("Downloading ExifTool from ", exiftoolurl)
-    download.file(exiftoolurl, zipfile, quiet = quiet)
+    download.file(exiftoolurl, zipfile, quiet = TRUE)
     #check download
     if(!file.exists(zipfile)) {
       stop("Error downloading ExifTool from ", exiftoolurl)
     }
     #unzip
     if(!quiet) message("Extracting ExifTool to ", installloc)
-    unzip(zipfile, installloc, overwrite = TRUE)
+    unzip(zipfile, exdir=installloc, overwrite = TRUE)
     #remove zip file
     unlink(zipfile)
     #return success
@@ -116,8 +118,3 @@ installExifTool <- function(quiet=TRUE) {
   })
 
 }
-
-
-
-
-
