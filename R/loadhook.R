@@ -101,14 +101,14 @@ installExifTool <- function(libname, pkgname, quiet=TRUE) {
   tryCatch({
     zipfile <- file.path(installloc, "exiftool.zip")
     if(!quiet) message("Downloading ExifTool from ", exiftoolurl)
-    download.file(exiftoolurl, zipfile, quiet = TRUE)
+    utils::download.file(exiftoolurl, zipfile, quiet = TRUE)
     #check download
     if(!file.exists(zipfile)) {
       stop("Error downloading ExifTool from ", exiftoolurl)
     }
     #unzip
     if(!quiet) message("Extracting ExifTool to ", installloc)
-    unzip(zipfile, exdir=installloc, overwrite = TRUE)
+    utils::unzip(zipfile, exdir=installloc, overwrite = TRUE)
     #remove zip file
     unlink(zipfile)
     #return success
