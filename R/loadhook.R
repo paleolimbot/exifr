@@ -10,10 +10,10 @@
 }
 
 
-configureExifTool <- function(quiet=TRUE) {
+configureExifTool <- function(quiet=TRUE, forceInstall=FALSE) {
   #find command, will throw error if perl is not installed
-  command <- findExifToolCommand(quiet=FALSE)
-  if(is.null(command)) {
+  command <- findExifToolCommand(quiet=FALSE, forceInstall=forceInstall)
+  if(is.null(command) || forceInstall) {
     #try downloading/installing exiftool
     installExifTool(quiet=FALSE)
     command <- findExifToolCommand(quiet=FALSE)
@@ -26,10 +26,10 @@ configureExifTool <- function(quiet=TRUE) {
   }
 }
 
-findExifToolCommand <- function(quiet=TRUE) {
+findExifToolCommand <- function(quiet=TRUE, forceInstall=FALSE) {
   #try straight-up exiftool command
   if(!quiet) message("Trying 'exiftool' on the console")
-  if(testCommand("exiftool --version")) {
+  if(testCommand("exiftool --version") && !forceInstall) {
     if(!quiet) message("Found")
     return("exiftool")
   } else {
