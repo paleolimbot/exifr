@@ -53,7 +53,7 @@ findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE
     #file.path(libname, pkgname, "exiftool/exiftool.pl"), and file.path("~", "exiftool/exiftool.pl")
     #remember to shellquote filenames!
     commands <- c(paste(perlpath, shQuote(file.path(libname, pkgname, "exiftool/exiftool.pl"))),
-                  paste(perlpath, shQuote(file.path("~", "exiftool/exiftool.pl"))))
+                  paste(perlpath, shQuote(file.path(path.expand("~"), "exiftool/exiftool.pl"))))
 
     for(command in commands) {
       if(testCommand(paste(command, "--version"))) {
