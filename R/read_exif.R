@@ -129,6 +129,7 @@ read_exif_base <- function(command, quiet = TRUE) {
 #' @param args a list of non-shell quoted arguments (e.g. \code{-n -csv})
 #' @param fnames a list of filenames (\code{shQuote()} will be applied to this vector)
 #' @param intern \code{TRUE} if output should be returned as a character vector.
+#' @param quiet Suppress output of the command itself.
 #' @param ... additional arguments to be passed to \code{system()}
 #'
 #' @return The exit code if \code{intern=FALSE}, or the standard output as a character vector

@@ -14,13 +14,11 @@ knitr::opts_chunk$set(
 
 # exifr
 
-Ever needed to read in EXIF data from images or other files in R? [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) by Phil Harvey is the most comprenesive tool available for reading, writing and editing meta information in a wide variety of files. ExifTool supports many different metadata formats including EXIF, GPS, IPTC, XMP, JFIF, GeoTIFF, ICC Profile, Photoshop IRB, FlashPix, AFCP and ID3, as well as the maker notes of many digital cameras by Canon, Casio, FLIR, FujiFilm, GE, HP, JVC/Victor, Kodak, Leaf, Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson, Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo, Sigma/Foveon and Sony.
-
-`exifr` provides a thin wrapper around [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) allowing the reading of image file metadata with a single command.
+Ever needed to read in EXIF data from images or other files in R? [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) by Phil Harvey is the most comprenesive tool available for reading, writing and editing meta information in a wide variety of files. ExifTool supports many different metadata formats including EXIF, GPS, IPTC, XMP, JFIF, GeoTIFF, ICC Profile, Photoshop IRB, FlashPix, AFCP and ID3, as well as the maker notes of many digital cameras by Canon, Casio, FLIR, FujiFilm, GE, HP, JVC/Victor, Kodak, Leaf, Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson, Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo, Sigma/Foveon and Sony. This package provides a thin wrapper around [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) allowing the reading of image file metadata with a single command.
 
 ## Installation
 
-You will need Perl to use exifr, which may already be installed on your system (Mac, Linux). If you are on Windows you need to install Perl before installing exifr (easily done from [Strawberry Perl](http://www.strawberryperl.com/) or [Active State Perl](https://www.activestate.com/activeperl/downloads). MacOS users can also install ExifTool directly from [sourceforge](https://sourceforge.net/projects/exiftool/files/).
+You will need Perl to use exifr, which may already be installed on your system (Mac, Linux). If you are on Windows you need to install Perl before installing exifr (easily done from [Strawberry Perl](http://www.strawberryperl.com/) or [Active State Perl](https://www.activestate.com/activeperl/downloads). Mac users can also install ExifTool directly from [sourceforge](https://sourceforge.net/projects/exiftool/files/), which is not necessary but may be useful if ExifTool is to be used outside of R.
 
 You can install exifr from github with:
 

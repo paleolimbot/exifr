@@ -4,7 +4,8 @@
 \alias{exiftool_call}
 \title{Call exiftool from R}
 \usage{
-exiftool_call(args = c("--help"), fnames = NULL, intern = FALSE, ...)
+exiftool_call(args = c("--help"), fnames = NULL, intern = FALSE, ...,
+  quiet = FALSE)
 }
 \arguments{
 \item{args}{a list of non-shell quoted arguments (e.g. \code{-n -csv})}
@@ -14,6 +15,8 @@ exiftool_call(args = c("--help"), fnames = NULL, intern = FALSE, ...)
 \item{intern}{\code{TRUE} if output should be returned as a character vector.}
 
 \item{...}{additional arguments to be passed to \code{system()}}
+
+\item{quiet}{Suppress output of the command itself.}
 }
 \value{
 The exit code if \code{intern=FALSE}, or the standard output as a character vector
