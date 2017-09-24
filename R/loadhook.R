@@ -1,11 +1,11 @@
 
-#.onLoad hook for when namespace is loaded
+# .onLoad hook for when namespace is loaded
 .onLoad <- function(libname, pkgname) {
   configureExifTool(libname, pkgname, quiet=FALSE, forceInstall=FALSE)
 }
 
 configureExifTool <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) {
-  #find command, will throw error if perl is not installed
+  # find command, will throw error if perl is not installed
   command <- findExifToolCommand(libname, pkgname, quiet=quiet, forceInstall=forceInstall)
   if(is.null(command) || forceInstall) {
     #try downloading/installing exiftool
@@ -24,13 +24,13 @@ configureExifTool <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) 
 }
 
 findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE) {
-  #try straight-up exiftool command
+  # try straight-up exiftool command
   if(!quiet) message("Trying 'exiftool' on the console...")
   if(testCommand("exiftool --version") && !forceInstall) {
     if(!quiet) message("Found")
     return("exiftool")
   } else {
-    #find Perl, check default install location
+    # find Perl, check default install location
     if(!quiet) message("Checking Perl installation")
     perlpaths <- c(options("exifr.perlpath")$exifr.perlpath, "perl",
                    "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
@@ -49,9 +49,9 @@ findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE
            ". Specify perl location by setting options(exifr.perlpath='my/path/to/perl')")
     }
     if(!quiet) message("Found perl at ", perlpath, "; looking for ExifTool")
-    #look for exiftool/exiftool.pl in two locations:
-    #file.path(libname, pkgname, "exiftool/exiftool.pl"), and file.path("~", "exiftool/exiftool.pl")
-    #remember to shellquote filenames!
+    # look for exiftool/exiftool.pl in two locations:
+    # file.path(libname, pkgname, "exiftool/exiftool.pl"), and file.path("~", "exiftool/exiftool.pl")
+    # remember to shellquote filenames!
     commands <- c(paste(perlpath, shQuote(file.path(libname, pkgname, "exiftool/exiftool.pl"))),
                   paste(perlpath, shQuote(file.path(path.expand("~"), "exiftool/exiftool.pl"))))
 
@@ -62,7 +62,7 @@ findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE
       }
     }
 
-    #perl is installed, but not ExifTool
+    # perl is installed, but not ExifTool
     if(!quiet) message("No valid ExifTool installation")
     return(NULL)
   }
@@ -76,7 +76,7 @@ testCommand <- function(command) {
 installExifTool <- function(libname, pkgname, quiet=TRUE) {
   installlocs <- c(file.path(libname, pkgname), path.expand("~"))
   exiftoolurl <- "http://paleolimbot.github.io/exifr/exiftool.zip"
-  #check for a writable install location
+  # check for a writable install location
   if(!quiet) message("Checking for writable install location...")
   installloc <- NULL
   for(il in installlocs) {
@@ -97,21 +97,21 @@ installExifTool <- function(libname, pkgname, quiet=TRUE) {
 
   if(!quiet) message("Attempting to install ExifTool to ", installloc)
 
-  #download exiftool zip
+  # download exiftool zip
   tryCatch({
     zipfile <- file.path(installloc, "exiftool.zip")
     if(!quiet) message("Downloading ExifTool from ", exiftoolurl)
     utils::download.file(exiftoolurl, zipfile, quiet = TRUE)
-    #check download
+    # check download
     if(!file.exists(zipfile)) {
       stop("Error downloading ExifTool from ", exiftoolurl)
     }
-    #unzip
+    # unzip
     if(!quiet) message("Extracting ExifTool to ", installloc)
     utils::unzip(zipfile, exdir=installloc, overwrite = TRUE)
-    #remove zip file
+    # remove zip file
     unlink(zipfile)
-    #return success
+    # return success
     return(TRUE)
   }, error=function(e){
     stop("Error installing ExifTool: ", e)
