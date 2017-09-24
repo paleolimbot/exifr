@@ -138,8 +138,10 @@ read_exif_base <- function(command, quiet = TRUE) {
 #' @examples
 #' exiftool_call("--help")
 #'
-exiftool_call <- function(args=c("--help"), fnames = NULL, intern = FALSE, ...) {
-  system(exiftool.command(args, fnames), intern=intern, ...)
+exiftool_call <- function(args=c("--help"), fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
+  command <- exiftool.command(args, fnames)
+  if(!quiet) message(command)
+  system(command, intern=intern, ...)
 }
 
 # private helper command to generate call to exiftool
