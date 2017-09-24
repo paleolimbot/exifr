@@ -36,8 +36,9 @@ package Image::ExifTool::MXF;
 use strict;
 use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
+use Image::ExifTool::GPS;
 
-$VERSION = '1.07';
+$VERSION = '1.08';
 
 sub ProcessPrimer($$$);
 sub ProcessLocalSet($$$);
@@ -77,16 +78,15 @@ my %timestamp = (
 );
 my %geoLat = (
     Groups => { 2 => 'Location' },
-    PrintConv => 'require Image::ExifTool::GPS; Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
+    PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
 );
 my %geoLon = (
     Groups => { 2 => 'Location' },
-    PrintConv => 'require Image::ExifTool::GPS; Image::ExifTool::GPS::ToDMS($self, $val, 1, "E")',
+    PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "E")',
 );
 my %geoLatLon = (
     Groups => { 2 => 'Location' },
     PrintConv => q{
-        require Image::ExifTool::GPS;
         my ($lat, $lon) = split ' ', $val;
         $lat = Image::ExifTool::GPS::ToDMS($self, $lat, 1, 'N');
         $lon = Image::ExifTool::GPS::ToDMS($self, $lon, 1, 'E');
@@ -2987,7 +2987,7 @@ information from MXF (Material Exchange Format) files.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

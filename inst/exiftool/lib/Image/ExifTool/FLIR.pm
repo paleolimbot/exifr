@@ -22,8 +22,9 @@ use strict;
 use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
+use Image::ExifTool::GPS;
 
-$VERSION = '1.13';
+$VERSION = '1.15';
 
 sub ProcessFLIR($$;$);
 sub ProcessFLIRText($$$);
@@ -413,18 +414,18 @@ my %float8g = ( Format => 'float', PrintConv => 'sprintf("%.8g",$val)' );
     0x070 => { Name => 'AtmosphericTransAlpha1', %float6f }, #1 (value: 0.006569)
     0x074 => { Name => 'AtmosphericTransAlpha2', %float6f }, #1 (value: 0.012620)
     0x078 => { Name => 'AtmosphericTransBeta1',  %float6f }, #1 (value: -0.002276)
-    0x07C => { Name => 'AtmosphericTransBeta2',  %float6f }, #1 (value: -0.006670)
+    0x07c => { Name => 'AtmosphericTransBeta2',  %float6f }, #1 (value: -0.006670)
     0x080 => { Name => 'AtmosphericTransX',      %float6f }, #1 (value: 1.900000)
     # 0x84,0x88: 0
     # 0x8c - float: 0,4,6
     0x90 => { Name => 'CameraTemperatureRangeMax', %floatKelvin },
     0x94 => { Name => 'CameraTemperatureRangeMin', %floatKelvin },
-    0x98 => { Name => 'UnknownTemperature1', %floatKelvin, Unknown => 1 }, # 50 degrees over camera max
-    0x9c => { Name => 'UnknownTemperature2', %floatKelvin, Unknown => 1 }, # usually 10 or 20 degrees below camera min
-    0xa0 => { Name => 'UnknownTemperature3', %floatKelvin, Unknown => 1 }, # same as camera max
-    0xa4 => { Name => 'UnknownTemperature4', %floatKelvin, Unknown => 1 }, # same as camera min
-    0xa8 => { Name => 'UnknownTemperature5', %floatKelvin, Unknown => 1 }, # usually 50 or 88 degrees over camera max
-    0xac => { Name => 'UnknownTemperature6', %floatKelvin, Unknown => 1 }, # usually 10, 20 or 40 degrees below camera min
+    0x98 => { Name => 'CameraTemperatureMaxClip', %floatKelvin }, # 50 degrees over camera max
+    0x9c => { Name => 'CameraTemperatureMinClip', %floatKelvin }, # usually 10 or 20 degrees below camera min
+    0xa0 => { Name => 'CameraTemperatureMaxWarn', %floatKelvin }, # same as camera max
+    0xa4 => { Name => 'CameraTemperatureMinWarn', %floatKelvin }, # same as camera min
+    0xa8 => { Name => 'CameraTemperatureMaxSaturated', %floatKelvin }, # usually 50 or 88 degrees over camera max
+    0xac => { Name => 'CameraTemperatureMinSaturated', %floatKelvin }, # usually 10, 20 or 40 degrees below camera min
     0xd4 => { Name => 'CameraModel',        Format => 'string[32]' },
     0xf4 => { Name => 'CameraPartNumber',   Format => 'string[16]' }, #1
     0x104 => { Name => 'CameraSerialNumber',Format => 'string[16]' }, #1
@@ -1106,7 +1107,6 @@ my %float8g = ( Format => 'float', PrintConv => 'sprintf("%.8g",$val)' );
     },
     1 => {
         Name => 'GPSLatitude',
-        RawConv => 'require Image::ExifTool::GPS; $val', # to load Composite tags and routines
         PrintConv => 'Image::ExifTool::GPS::ToDMS($self, $val, 1, "N")',
     },
     2 => {
@@ -1222,8 +1222,7 @@ sub GetImageType($$$)
     } elsif (length $val != $w * $h * 2) {
         $et->Warn("Unrecognized FLIR $tag data format");
     } elsif (GetByteOrder() eq 'II') {
-        require Image::ExifTool::Sony;
-        $val = Image::ExifTool::Sony::MakeTiffHeader($w,$h,1,16) . $val;
+        $val = Image::ExifTool::MakeTiffHeader($w,$h,1,16) . $val;
         $type = 'TIFF';
     } else {
         $et->Warn("Don't yet support big-endian TIFF $tag");
@@ -1426,12 +1425,15 @@ sub ProcessFLIR($$;$)
 
         my $entry = $i * 0x20;
         my $recType = Get16u(\$buff, $entry);
-        next if $recType == 0;  # ignore free records
+        if ($recType == 0) {
+            $verbose and print $out "$$et{INDENT}$i) FLIR Record 0x00 (empty)\n";
+            next;
+        }
         my $recPos = Get32u(\$buff, $entry + 0x0c);
         my $recLen = Get32u(\$buff, $entry + 0x10);
 
-        $verbose and printf $out "%sFLIR Record 0x%.2x, offset 0x%.4x, length 0x%.4x\n",
-                                 $$et{INDENT}, $recType, $recPos, $recLen;
+        $verbose and printf $out "%s%d) FLIR Record 0x%.2x, offset 0x%.4x, length 0x%.4x\n",
+                                 $$et{INDENT}, $i, $recType, $recPos, $recLen;
 
         unless ($raf->Seek($recPos) and $raf->Read($rec, $recLen) == $recLen) {
             $et->Warn('Invalid FLIR record');
@@ -1443,7 +1445,6 @@ sub ProcessFLIR($$;$)
                 DataPos => $recPos,
                 Start   => 0,
                 Size    => $recLen,
-                Index => $i,
             );
         } elsif ($verbose > 2) {
             my %parms = ( DataPos => $recPos, Prefix => $$et{INDENT} );
@@ -1497,7 +1498,7 @@ Systems Inc. thermal image files (FFF, FPF and JPEG format).
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

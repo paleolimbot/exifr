@@ -16,7 +16,7 @@ use strict;
 use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 
-$VERSION = '1.46';
+$VERSION = '1.47';
 
 sub ProcessID3v2($$$);
 sub ProcessPrivate($$$);
@@ -1038,6 +1038,7 @@ sub ProcessID3v2($$$)
     my $len;    # frame data length
 
     $verbose and $et->VerboseDir($tagTablePtr->{GROUPS}->{1}, 0, $size);
+    Image::ExifTool::HexDump($dataPt, $size, Start => $offset) if $verbose > 2;
 
     for (;;$offset+=$len) {
         my ($id, $flags, $hi);
@@ -1543,7 +1544,7 @@ other types of audio files.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

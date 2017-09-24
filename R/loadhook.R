@@ -32,9 +32,9 @@ findExifToolCommand <- function(libname, pkgname, quiet=TRUE, forceInstall=FALSE
   } else {
     # find Perl, check default install location
     if(!quiet) message("Checking Perl installation")
-    perlpaths <- c(options("exifr.perlpath")$exifr.perlpath, "perl",
+    perlpaths <- c(getOption("exifr.perlpath"), "perl",
                    "C:\\Perl64\\bin\\perl", "C:\\Perl\\bin\\perl",
-                   "c:\\Strawberry\\perl\\bin\\perl")
+                   "C:\\Strawberry\\perl\\bin\\perl")
     perlpath <- NULL
     for(pp in perlpaths) {
       if(testCommand(paste(pp, "--version"))) {

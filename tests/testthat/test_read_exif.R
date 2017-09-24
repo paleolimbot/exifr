@@ -57,3 +57,10 @@ test_that("command-line length is properly dealt with", {
   df$FileAccessDate <- NULL
   expect_equal(nrow(unique(df)), 2)
 })
+
+test_that("included exiftool with perl works as well as command-line", {
+  internal_exiftool <- paste("perl", system.file("exiftool/exiftool.pl", package = "exifr"))
+  old_opts <- options(exifr.exiftoolcommand = internal_exiftool)
+  expect_is(read_exif(test_files), "data.frame")
+  options(old_opts)
+})

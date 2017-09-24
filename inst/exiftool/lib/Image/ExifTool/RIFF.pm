@@ -1,9 +1,10 @@
 #------------------------------------------------------------------------------
 # File:         RIFF.pm
 #
-# Description:  Read RIFF/WAV/AVI meta information
+# Description:  Read RIFF/AVI/WAV meta information
 #
 # Revisions:    09/14/2005 - P. Harvey Created
+#               06/28/2017 - PH Added MBWF/RF64 support
 #
 # References:   1) http://www.exif.org/Exif2-2.PDF
 #               2) http://www.vlsi.fi/datasheets/vs1011.pdf
@@ -19,6 +20,7 @@
 #              12) http://abcavi.kibi.ru/infotags.htm
 #              13) http://tech.ebu.ch/docs/tech/tech3285.pdf
 #              14) https://developers.google.com/speed/webp/docs/riff_container
+#              15) https://tech.ebu.ch/docs/tech/tech3306-2009.pdf
 #------------------------------------------------------------------------------
 
 package Image::ExifTool::RIFF;
@@ -27,7 +29,7 @@ use strict;
 use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 
-$VERSION = '1.41';
+$VERSION = '1.45';
 
 sub ConvertTimecode($);
 
@@ -47,6 +49,30 @@ my %riffMimeType = (
     OFR  => 'audio/x-ofr',
     PAC  => 'audio/x-lpac',
     WV   => 'audio/x-wavpack',
+);
+
+# character sets for recognized Windows code pages
+my %code2charset = (
+    0     => 'Latin',
+    65001 => 'UTF8',
+    1252  => 'Latin',
+    1250  => 'Latin2',
+    1251  => 'Cyrillic',
+    1253  => 'Greek',
+    1254  => 'Turkish',
+    1255  => 'Hebrew',
+    1256  => 'Arabic',
+    1257  => 'Baltic',
+    1258  => 'Vietnam',
+    874   => 'Thai',
+    10000 => 'MacRoman',
+    10029 => 'MacLatin2',
+    10007 => 'MacCyrillic',
+    10006 => 'MacGreek',
+    10081 => 'MacTurkish',
+    10010 => 'MacRomanian',
+    10079 => 'MacIceland',
+    10082 => 'MacCroatian',
 );
 
 %Image::ExifTool::RIFF::audioEncoding = ( #2
@@ -300,7 +326,7 @@ my %riffMimeType = (
 %Image::ExifTool::RIFF::Main = (
     PROCESS_PROC => \&Image::ExifTool::RIFF::ProcessChunks,
     NOTES => q{
-        The RIFF container format is used various types of fines including WAV, AVI,
+        The RIFF container format is used various types of fines including AVI, WAV,
         WEBP, LA, OFR, PAC and WV.  According to the EXIF specification, Meta
         information is embedded in two types of RIFF C<LIST> chunks: C<INFO> and
         C<exif>, and information about the audio content is stored in the C<fmt >
@@ -319,6 +345,15 @@ my %riffMimeType = (
    'bext' => {
         Name => 'BroadcastExtension',
         SubDirectory => { TagTable => 'Image::ExifTool::RIFF::BroadcastExt' },
+    },
+    ds64 => { #15
+        Name => 'DataSize64',
+        SubDirectory => { TagTable => 'Image::ExifTool::RIFF::DS64' },
+    },
+    list => 'ListType',  #15
+    labl => { #15
+        Name => 'Label',
+        SubDirectory => { TagTable => 'Image::ExifTool::RIFF::Label' },
     },
     LIST_INFO => {
         Name => 'Info',
@@ -346,6 +381,13 @@ my %riffMimeType = (
     },
     LIST_hydt => { #PH (Pentax metadata)
         Name => 'PentaxData',
+        SubDirectory => {
+            TagTable => 'Image::ExifTool::Pentax::AVI',
+            ProcessProc => \&Image::ExifTool::RIFF::ProcessChunks,
+        },
+    },
+    LIST_pntx => { #Andras Salamon (Q-S1 AVI)
+        Name => 'PentaxData2',
         SubDirectory => {
             TagTable => 'Image::ExifTool::Pentax::AVI',
             ProcessProc => \&Image::ExifTool::RIFF::ProcessChunks,
@@ -424,6 +466,10 @@ my %riffMimeType = (
         Groups => { 2 => 'Time' },
         ValueConv => 'Image::ExifTool::RIFF::ConvertRIFFDate($val)',
         PrintConv => '$self->ConvertDateTime($val)',
+    },
+    CSET => {
+        Name => 'CharacterSet',
+        SubDirectory => { TagTable => 'Image::ExifTool::RIFF::CSET' },
     },
 #
 # WebP-specific tags
@@ -551,12 +597,50 @@ my %riffMimeType = (
     },
 );
 
+# 64-bit chunk sizes (ref 15)
+%Image::ExifTool::RIFF::DS64 = (
+    PROCESS_PROC => \&Image::ExifTool::ProcessBinaryData,
+    GROUPS => { 2 => 'Audio' },
+    FORMAT => 'int64u',
+    NOTES => q{
+        64-bit data sizes for MBWF/RF64 files.  See
+        L<https://tech.ebu.ch/docs/tech/tech3306-2009.pdf> for the specification.
+    },
+    0 => {
+        Name => 'RIFFSize64',
+        PrintConv => \&Image::ExifTool::ConvertFileSize,
+    },
+    1 => {
+        Name => 'DataSize64',
+        DataMember => 'DataSize64',
+        RawConv => '$$self{DataSize64} = $val',
+        PrintConv => \&Image::ExifTool::ConvertFileSize,
+    },
+    2 => 'NumberOfSamples64',
+    # (after this comes a table of size overrides for chunk
+    #  types other than 'data', but since these are currently
+    #  very unlikely, support for these is not yet implemented)
+);
+
+# cue point labels (ref 15)
+%Image::ExifTool::RIFF::Label = (
+    PROCESS_PROC => \&Image::ExifTool::ProcessBinaryData,
+    GROUPS => { 2 => 'Audio' },
+    FORMAT => 'int32u',
+    0 => 'LabelID',
+    1 => {
+        Name => 'LabelText',
+        Format => 'string[$size-4]',
+    },
+);
+
 # Sub chunks of INFO LIST chunk
 %Image::ExifTool::RIFF::Info = (
     PROCESS_PROC => \&Image::ExifTool::RIFF::ProcessChunks,
     GROUPS => { 2 => 'Audio' },
+    FORMAT => 'string',
     NOTES => q{
-        RIFF INFO tags found in WAV audio and AVI video files.  Tags which are part
+        RIFF INFO tags found in AVI video and WAV audio files.  Tags which are part
         of the EXIF 2.3 specification have an underlined Tag Name in the HTML
         version of this documentation.  Other tags are found in AVI files generated
         by some software.
@@ -735,7 +819,7 @@ my %riffMimeType = (
     erel => 'RelatedImageFile',
     etim => { Name => 'TimeCreated', Groups => { 2 => 'Time' } },
     ecor => { Name => 'Make',        Groups => { 2 => 'Camera' } },
-    emdl => { Name => 'Model',       Groups => { 2 => 'Camera' } },
+    emdl => { Name => 'Model',       Groups => { 2 => 'Camera' }, Description => 'Camera Model Name' },
     emnt => { Name => 'MakerNotes',  Binary => 1 },
     eucm => {
         Name => 'UserComment',
@@ -774,6 +858,20 @@ my %riffMimeType = (
     PROCESS_PROC => \&Image::ExifTool::RIFF::ProcessChunks,
     GROUPS => { 2 => 'Video' },
     # (have seen tc_O, tc_A, rn_O and rn_A)
+);
+
+# RIFF character set chunk
+%Image::ExifTool::RIFF::CSET = (
+    PROCESS_PROC => \&Image::ExifTool::RIFF::ProcessBinaryData,
+    GROUPS => { 2 => 'Other' },
+    Format => 'int16u',
+    0 => {
+        Name => 'CodePage',
+        RawConv => '$$self{CodePage} = $val',
+    },
+    1 => 'CountryCode',
+    2 => 'LanguageCode',
+    3 => 'Dialect',
 );
 
 %Image::ExifTool::RIFF::AVIHeader = (
@@ -1328,6 +1426,15 @@ sub ProcessChunks($$$)
     my $base = $$dirInfo{Base};
     my $verbose = $et->Options('Verbose');
     my $unknown = $et->Options('Unknown');
+    my $charset = $et->Options('CharsetRIFF');
+
+    unless ($charset) {
+        if ($$et{CodePage}) {
+            $charset = $$et{CodePage};
+        } elsif (defined $charset and $charset eq '0') {
+            $charset = 'Latin';
+        }
+    }
 
     $et->VerboseDir($$dirInfo{DirName}, 0, $size) if $verbose;
 
@@ -1361,8 +1468,13 @@ sub ProcessChunks($$$)
                     $start -= $base;
                 }
             } elsif (not $$tagInfo{Binary}) {
-                $val = substr($$dataPt, $start, $len);
-                $val =~ s/\0+$//;   # remove trailing nulls from strings
+                my $format = $$tagInfo{Format} || $$tagTablePtr{FORMAT};
+                if ($format and $format eq 'string') {
+                    $val = substr($$dataPt, $start, $len);
+                    $val =~ s/\0+$//;   # remove trailing nulls from strings
+                    # decode if necessary
+                    $val = $et->Decode($val, $charset) if $charset;
+                }
             }
         } elsif ($verbose or $unknown) {
             MakeTagInfo($tagTablePtr, $tag);
@@ -1389,14 +1501,15 @@ sub ProcessRIFF($$)
 {
     my ($et, $dirInfo) = @_;
     my $raf = $$dirInfo{RAF};
-    my ($buff, $buf2, $type, $mime, $err);
+    my ($buff, $buf2, $type, $mime, $err, $rf64);
     my $verbose = $et->Options('Verbose');
     my $unknown = $et->Options('Unknown');
 
     # verify this is a valid RIFF file
     return 0 unless $raf->Read($buff, 12) == 12;
-    if ($buff =~ /^RIFF....(.{4})/s) {
-        $type = $riffType{$1};
+    if ($buff =~ /^(RIFF|RF64)....(.{4})/s) {
+        $type = $riffType{$2};
+        $rf64 = 1 if $1 eq 'RF64';
     } else {
         # minimal support for a few obscure lossless audio formats...
         return 0 unless $buff =~ /^(LA0[234]|OFR |LPAC|wvpk)/ and $raf->Read($buf2, 1024);
@@ -1406,6 +1519,7 @@ sub ProcessRIFF($$)
     }
     $mime = $riffMimeType{$type} if $type;
     $et->SetFileType($type, $mime);
+    $$et{VALUE}{FileType} .= ' (RF64)' if $rf64;
     $$et{RIFFStreamType} = '';    # initialize stream type
     SetByteOrder('II');
     my $tagTablePtr = GetTagTable('Image::ExifTool::RIFF::Main');
@@ -1427,6 +1541,8 @@ sub ProcessRIFF($$)
             $pos += 4;
             $tag .= "_$buff";
             $len -= 4;  # already read 4 bytes (the LIST type)
+        } elsif ($tag eq 'data' and $len == 0xffffffff and $$et{DataSize64}) {
+            $len = $$et{DataSize64};
         }
         $et->VPrint(0, "RIFF '$tag' chunk ($len bytes of data):\n");
         if ($len <= 0) {
@@ -1467,6 +1583,10 @@ sub ProcessRIFF($$)
             # extract information from remaining file as an embedded file
             $$et{DOC_NUM} = ++$$et{DOC_COUNT}
         } else {
+            if ($len > 0x7fffffff and not $et->Options('LargeFileSupport')) {
+                $et->Warn("Stopped parsing at large $tag chunk (LargeFileSupport not set)");
+                last;
+            }
             $raf->Seek($len2, 1) or $err=1, last;
         }
         $pos += $len2;
@@ -1482,7 +1602,7 @@ __END__
 
 =head1 NAME
 
-Image::ExifTool::RIFF - Read RIFF/WAV/AVI meta information
+Image::ExifTool::RIFF - Read RIFF/AVI/WAV meta information
 
 =head1 SYNOPSIS
 
@@ -1496,7 +1616,7 @@ including AVI videos, WAV audio files and WEBP images.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
@@ -1518,6 +1638,8 @@ under the same terms as Perl itself.
 =item L<http://wiki.multimedia.cx/index.php?title=TwoCC>
 
 =item L<https://developers.google.com/speed/webp/docs/riff_container>
+
+=item L<https://tech.ebu.ch/docs/tech/tech3306-2009.pdf>
 
 =back
 

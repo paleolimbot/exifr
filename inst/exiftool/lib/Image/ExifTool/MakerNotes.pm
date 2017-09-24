@@ -21,7 +21,7 @@ sub ProcessKodakPatch($$$);
 sub WriteUnknownOrPreview($$$);
 sub FixLeicaBase($$;$);
 
-$VERSION = '1.97';
+$VERSION = '1.99';
 
 my $debug;          # set to 1 to enable debugging code
 
@@ -87,6 +87,15 @@ my $debug;          # set to 1 to enable debugging code
             Start => '$valuePtr + 6',
             ByteOrder => 'Unknown',
             FixBase => 1, # necessary for AVI and MOV videos
+        },
+    },
+    {
+        Name => 'MakerNoteDJI',
+        Condition => '$$self{Make} eq "DJI" and $$valPt !~ /^...\@AMBA/s',
+        SubDirectory => {
+            TagTable => 'Image::ExifTool::DJI::Main',
+            Start => '$valuePtr',
+            ByteOrder => 'Unknown',
         },
     },
     {
@@ -592,13 +601,14 @@ my $debug;          # set to 1 to enable debugging code
         },
     },
     {
-        Name => 'MakerNoteLeica5', # used by the X1/X2/X VARIO/T
+        Name => 'MakerNoteLeica5', # used by the X1/X2/X VARIO/T/X-U
         # (X1 starts with "LEICA\0\x01\0", Make is "LEICA CAMERA AG")
         # (X2 starts with "LEICA\0\x05\0", Make is "LEICA CAMERA AG")
         # (X VARIO starts with "LEICA\0\x04\0", Make is "LEICA CAMERA AG")
         # (T (Typ 701) starts with "LEICA\0\0x6", Make is "LEICA CAMERA AG")
         # (X (Typ 113) starts with "LEICA\0\0x7", Make is "LEICA CAMERA AG")
-        Condition => '$$valPt =~ /^LEICA\0[\x01\x04\x05\x06\x07]\0/',
+        # (X-U (Typ 113) starts with "LEICA\0\x10\0", Make is "LEICA CAMERA AG")
+        Condition => '$$valPt =~ /^LEICA\0[\x01\x04\x05\x06\x07\x10]\0/',
         SubDirectory => {
             TagTable => 'Image::ExifTool::Panasonic::Leica5',
             Start => '$valuePtr + 8',
@@ -640,7 +650,7 @@ my $debug;          # set to 1 to enable debugging code
             TagTable => 'Image::ExifTool::Panasonic::Leica6',
             Start => '$valuePtr + 8',
             ByteOrder => 'Unknown',
-            Base => '-$base',  # uses absolute file offsets
+            Base => '-$base',  # uses absolute file offsets (not based on TIFF header offset)
         },
     },
     {
@@ -742,7 +752,7 @@ my $debug;          # set to 1 to enable debugging code
     {
         Name => 'MakerNotePentax5',
         # (starts with "PENTAX \0")
-        # used by cameras such as the Q, Optio  S1, RS1500 and WG-1
+        # used by cameras such as the Q, Optio S1, RS1500 and WG-1
         Condition => '$$valPt=~/^PENTAX \0/',
         SubDirectory => {
             TagTable => 'Image::ExifTool::Pentax::Main',
@@ -1722,7 +1732,7 @@ maker notes in EXIF information.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

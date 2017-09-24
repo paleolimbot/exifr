@@ -288,6 +288,7 @@ Key:
                     } else {
                         $et->Sanitize(\$item);
                         ($copy[$i],$err) = $et->ConvInv($item,$fieldInfo,$tag,$strName,$type,'');
+                        $copy[$i] = '' unless defined $copy[$i];    # avoid undefined item
                         $err and $warn = $err, next Key;
                         $err = CheckXMP($et, $fieldInfo, \$copy[$i]);
                         $err and $warn = "$err in $strName $tag", next Key;
@@ -309,6 +310,7 @@ Key:
             $et->Sanitize(\$$struct{$key});
             ($val,$err) = $et->ConvInv($$struct{$key},$fieldInfo,$tag,$strName,$type,'');
             $err and $warn = $err, next Key;
+            next Key unless defined $val;   # check for undefined
             $err = CheckXMP($et, $fieldInfo, \$val);
             $err and $warn = "$err in $strName $tag", next Key;
             # turn this into a list if necessary
@@ -828,7 +830,7 @@ information.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

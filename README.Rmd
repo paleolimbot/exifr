@@ -20,7 +20,7 @@ Ever needed to read in EXIF data from images or other files in R? [ExifTool](htt
 
 ## Installation
 
-You will need Perl to use exifr, which may already be installed on your system (Mac, Linux). If you are on Windows you need to install Perl before installing exifr (easily done from [Strawberry Perl](http://www.strawberryperl.com/) or [Active State Perl](https://www.activestate.com/activeperl/downloads).
+You will need Perl to use exifr, which may already be installed on your system (Mac, Linux). If you are on Windows you need to install Perl before installing exifr (easily done from [Strawberry Perl](http://www.strawberryperl.com/) or [Active State Perl](https://www.activestate.com/activeperl/downloads). MacOS users can also install ExifTool directly from [sourceforge](https://sourceforge.net/projects/exiftool/files/).
 
 You can install exifr from github with:
 

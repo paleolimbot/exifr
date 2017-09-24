@@ -9,7 +9,6 @@
 # References:   1) http://www.dalibor.cz/minolta/makernote.htm
 #               2) Jay Al-Saadi private communication (testing with A2)
 #               3) Shingo Noguchi, PhotoXP (http://www.daifukuya.com/photoxp/)
-#               4) Niels Kristian Bech Jensen private communication
 #               5) http://www.cybercom.net/~dcoffin/dcraw/
 #               6) Pedro Corte-Real private communication
 #               7) ExifTool forum post by bronek (http://www.cpanforum.com/posts/1118)
@@ -36,9 +35,10 @@
 #              27) http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,3833.0.html
 #              28) Michael Reitinger private communication (RX100)
 #              29) http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,4086.0.html
-#              30) Iliah Borg private communication (LibRaw)
+#              IB) Iliah Borg private communication (LibRaw)
 #              JD) Jens Duttke private communication
 #              JR) Jos Roost private communication
+#              NJ) Niels Kristian Bech Jensen private communication
 #------------------------------------------------------------------------------
 
 package Image::ExifTool::Minolta;
@@ -49,7 +49,7 @@ use vars qw($VERSION %minoltaLensTypes %minoltaTeleconverters %minoltaColorMode
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 
-$VERSION = '2.29';
+$VERSION = '2.54';
 
 # Full list of product codes for Sony-compatible Minolta lenses
 # (ref http://www.kb.sony.com/selfservice/documentLink.do?externalId=C1000570)
@@ -160,7 +160,8 @@ $VERSION = '2.29';
 
 # high bytes in Sony LensID's identifying Metabones adapters and high bytes of Canon LensID's
 %metabonesID = (
-    0xef00 => \ 'Metabones Adapter',        # with Canon LensID 0x00xx
+    # 0xef00 is used by Metabones, Fotodiox, Sigma and Viltrox adapters (JR)
+    0xef00 => \ 'Canon EF Adapter',         # with Canon LensID 0x00xx
     0xf000 => 0xef00,                       # with Canon LensID 0x01xx
     0xf100 => 0xef00,                       # with Canon LensID 0x02xx
     0xff00 => 0xef00,                       # with Canon LensID 0x10xx
@@ -192,14 +193,21 @@ $VERSION = '2.29';
         # Note: Metabones Smart Adapter firmware versions before 31 kill
         # the high byte for 2-byte Canon LensType values, so the reported lens
         # will be incorrect for these
-        my $mb = $metabonesID{$id} or return undef;
-        ref $mb or $id = $mb, $mb = $metabonesID{$id};
-        require Image::ExifTool::Canon;
-        my $lens = $Image::ExifTool::Canon::canonLensTypes{$val - $id};
-        return $lens ? "$lens + $$mb" : undef;
+        my $mb = $metabonesID{$id};
+        if ($mb) {
+            ref $mb or $id = $mb, $mb = $metabonesID{$id};
+            require Image::ExifTool::Canon;
+            my $lens = $Image::ExifTool::Canon::canonLensTypes{$val - $id};
+            return "$lens + $$mb" if $lens;
+        } elsif ($val >= 0x4900) { # test for Sigma MC-11 SA-E adapter with Sigma SA-mount lens
+            require Image::ExifTool::Sigma;
+            my $lens = $Image::ExifTool::Sigma::sigmaLensTypes{$val - 0x4900};
+            return "$lens + MC-11 SA-E" if $lens;
+        }
+        return undef;
     },
     0 => 'Minolta AF 28-85mm F3.5-4.5 New', # New added (ref 13/18)
-    1 => 'Minolta AF 80-200mm F2.8 HS-APO G',
+    1 => 'Minolta AF 80-200mm F2.8 HS-APO G', # white
     2 => 'Minolta AF 28-70mm F2.8 G',
     3 => 'Minolta AF 28-80mm F4-5.6',
     4 => 'Minolta AF 85mm F1.4G', #exiv2 0.23
@@ -233,13 +241,14 @@ $VERSION = '2.29';
     24.4 => 'Sigma 18-200mm F3.5-6.3 DC', #22
     24.5 => 'Sigma DC 18-125mm F4-5,6 D', #exiv2 0.23
   # 24.6 => 'Tamron SP AF 28-75mm F2.8 XR Di (IF) Macro', #JD
-    24.6 => 'Tamron SP AF 28-75mm F2.8 XR Di LD Aspherical [IF] Macro', #4 (Model A09)
+    24.6 => 'Tamron SP AF 28-75mm F2.8 XR Di LD Aspherical [IF] Macro', #NJ (Model A09)
     25 => 'Minolta AF 100-300mm F4.5-5.6 APO (D) or Sigma Lens',
     25.1 => 'Sigma 100-300mm F4 EX (APO (D) or D IF)', #JD
     25.2 => 'Sigma 70mm F2.8 EX DG Macro', #JD
     25.3 => 'Sigma 20mm F1.8 EX DG Aspherical RF', #19
     25.4 => 'Sigma 30mm F1.4 EX DC', #21/27
     25.5 => 'Sigma 24mm F1.8 EX DG ASP Macro', #Florian Knorn
+    # 25 - also seen for an "old Sigma 50mm Macro" (forum2833)
     27 => 'Minolta AF 85mm F1.4 G (D)', # added (D) (ref 13)
     28 => 'Minolta/Sony AF 100mm F2.8 Macro (D) or Tamron Lens',
     # 28 => 'Sony 100mm F2.8 Macro (SAL100M28)', (ref 18/JR)
@@ -256,11 +265,11 @@ $VERSION = '2.29';
     # 31 => 'Sony 50mm F2.8 Macro (SAL50M28)', (ref JR)
     31.1 => 'Minolta/Sony AF 50mm F3.5 Macro',
     32 => 'Minolta/Sony AF 300mm F2.8 G or 1.5x Teleconverter', #13/18
-    # 32 => 'Minolta AF 300mm F2.8 G (D) SSM', (ref 13)
+    # 32 => 'Minolta AF 300mm F2.8 APO G (D) SSM', (ref 13) ("APO" added - ref JR)
     # 32 => 'Sony 300mm F2.8 G (SAL300F28G)', (ref 18/JR)
     33 => 'Minolta/Sony AF 70-200mm F2.8 G',
     # 33 => 'Sony 70-200mm F2.8 G (SAL70200G)', (ref JR)
-    # 33 => 'Minolta AF 70-200mm F2.8 G (D) SSM' (ref 13)
+    # 33 => 'Minolta AF 70-200mm F2.8 APO G (D) SSM' (ref 13) ("APO" added - ref JR)
     35 => 'Minolta AF 85mm F1.4 G (D) Limited',
     36 => 'Minolta AF 28-100mm F3.5-5.6 (D)',
     38 => 'Minolta AF 17-35mm F2.8-4 (D)', # (Konica Minolta, ref 13)
@@ -286,7 +295,7 @@ $VERSION = '2.29';
     #51.1 => 'Sony AF DT 55-200mm F4-5.5', #11 (anomaly? - PH)
     52 => 'Sony 70-300mm F4.5-5.6 G SSM (SAL70300G) or G SSM II or Tamron Lens', #JD
     52.1 => 'Sony 70-300mm F4.5-5.6 G SSM II (SAL70300G2)', #JR
-    52.2 => 'Tamron SP 70-300mm F4-5.6 Di USD', #JR,4 (Model A005)
+    52.2 => 'Tamron SP 70-300mm F4-5.6 Di USD', #JR,NJ (Model A005)
     53 => 'Sony 70-400mm F4-5.6 G SSM (SAL70400G)', #17(/w correction by Stephen Bishop)/JR
     54 => 'Carl Zeiss Vario-Sonnar T* 16-35mm F2.8 ZA SSM (SAL1635Z) or ZA SSM II', #17/JR
     54.1 => 'Carl Zeiss Vario-Sonnar T* 16-35mm F2.8 ZA SSM II (SAL1635Z2)', #JR
@@ -317,8 +326,8 @@ $VERSION = '2.29';
     # was 128.2 => 'Tamron 28-300mm F3.5-6.3',
     128.3 => 'Tamron 80-300mm F3.5-6.3',
     128.4 => 'Tamron AF 28-200mm F3.8-5.6 XR Di Aspherical [IF] Macro', #JD (Model A031)
-   # also Tamron AF 28-200mm F3.8-5.6 Aspherical', #30 (Model 71D)
-   # and 'Tamron AF 28-200mm F3.8-5.6 LD Aspherical [IF] Super', #30 (Model 171D)
+   # also Tamron AF 28-200mm F3.8-5.6 Aspherical', #IB (Model 71D)
+   # and 'Tamron AF 28-200mm F3.8-5.6 LD Aspherical [IF] Super', #IB (Model 171D)
     128.5 => 'Tamron SP AF 17-35mm F2.8-4 Di LD Aspherical IF', #JD (Model A05)
     128.6 => 'Sigma AF 50-150mm F2.8 EX DC APO HSM II', #JD
     128.7 => 'Sigma 10-20mm F3.5 EX DC HSM', #11 (Model 202-205)
@@ -332,10 +341,12 @@ $VERSION = '2.29';
    '128.14' => 'Sigma 17-50mm F2.8 EX DC HSM', #Exiv2
    '128.15' => 'Sigma 17-70mm F2.8-4 DC Macro HSM', #JR
    '128.16' => 'Sigma 150mm F2.8 EX DG OS HSM APO Macro', #Marcus Holland-Moritz
-   '128.17' => 'Sigma 150-500mm F5-6.3 APO DG OS HSM', #30
-   '128.18' => 'Tamron AF 28-105mm F4-5.6 [IF]', #30 (Model 179D)
+   '128.17' => 'Sigma 150-500mm F5-6.3 APO DG OS HSM', #IB
+   '128.18' => 'Tamron AF 28-105mm F4-5.6 [IF]', #IB (Model 179D)
    '128.19' => 'Sigma 35mm F1.4 DG HSM', #JR
    '128.20' => 'Sigma 18-35mm F1.8 DC HSM', #JR
+   '128.21' => 'Sigma 50-500mm F4.5-6.3 APO DG OS HSM', #JR
+   '128.22' => 'Sigma 24-105mm F4 DG HSM | A', #JR (013)
     129 => 'Tamron Lens (129)',
     129.1 => 'Tamron 200-400mm F5.6 LD', #12 (LD ref 23)
     129.2 => 'Tamron 70-300mm F4-5.6 LD', #12
@@ -344,15 +355,21 @@ $VERSION = '2.29';
     136 => 'Tokina EMZ M100 AF 100mm F3.5', #JD
     137 => 'Cosina 70-210mm F2.8-4 AF', #11
     138 => 'Soligor 19-35mm F3.5-4.5', #11
-    139 => 'Tokina AF 28-300mm F4-6.3', #30
+    139 => 'Tokina AF 28-300mm F4-6.3', #IB
     142 => 'Voigtlander 70-300mm F4.5-5.6', #JD
     146 => 'Voigtlander Macro APO-Lanthar 125mm F2.5 SL', #JD
     194 => 'Tamron SP AF 17-50mm F2.8 XR Di II LD Aspherical [IF]', #23 (Model A16)
+    202 => 'Tamron SP AF 70-200mm F2.8 Di LD [IF] Macro', #JR (Model A001) (see also 255.7)
     203 => 'Tamron SP 70-200mm F2.8 Di USD', #JR (Model A009)
     204 => 'Tamron SP 24-70mm F2.8 Di USD', #JR (Model A007)
-    213 => 'Tamron 16-300mm F3.5-6.3 Di II PZD', #JR (Model B016)
+    212 => 'Tamron 28-300mm F3.5-6.3 Di PZD', #JR (Model A010)
+    213 => 'Tamron 16-300mm F3.5-6.3 Di II PZD Macro', #JR (Model B016)
     214 => 'Tamron SP 150-600mm F5-6.3 Di USD', #JR (Model A011)
-    224 => 'Tamron SP 90mm F2.8 Di Macro 1:1 USD', #JR (Model F004)
+    215 => 'Tamron SP 15-30mm F2.8 Di USD', #JR (Model A012)
+    216 => 'Tamron SP 45mm F1.8 Di USD', #forum8320 (F013)
+    217 => 'Tamron SP 35mm F1.8 Di USD', #forum8320 (F012)
+    218 => 'Tamron SP 90mm F2.8 Di Macro 1:1 USD (F017)', #JR (Model F017)
+    224 => 'Tamron SP 90mm F2.8 Di Macro 1:1 USD (F004)', #JR (Model F004)
     255 => 'Tamron Lens (255)',
     255.1 => 'Tamron SP AF 17-50mm F2.8 XR Di II LD Aspherical', # (Model A16)
     255.2 => 'Tamron AF 18-250mm F3.5-6.3 XR Di II LD', #JD (Model A18?)
@@ -364,13 +381,17 @@ $VERSION = '2.29';
     255.7 => 'Tamron SP AF 70-200mm F2.8 Di LD IF Macro', #22 (Model A001)
     255.8 => 'Tamron SP AF 28-75mm F2.8 XR Di LD Aspherical IF', #24 (Model A09)
     255.9 => 'Tamron AF 90-300mm F4.5-5.6 Telemacro', #Fredrik Agert
+    18688 => 'Sigma MC-11 SA-E Mount Converter with not-supported Sigma lens',
+    # The MC-11 SA-E Mount Converter uses this 18688 offset for not-supported SIGMA mount lenses.
+    # The MC-11 EF-E Mount Converter uses the 61184 offset for not-supported CANON mount lenses, as also used by Metabones.
+    # Both MC-11 SA-E and EF-E Mount Converters use the 504xx LensType2 values for supported SA-mount or EF-mount Sigma lenses.
     25501 => 'Minolta AF 50mm F1.7', #7
     25511 => 'Minolta AF 35-70mm F4 or Other Lens',
     25511.1 => 'Sigma UC AF 28-70mm F3.5-4.5', #12/16(HighSpeed-AF)
     25511.2 => 'Sigma AF 28-70mm F2.8', #JD
     25511.3 => 'Sigma M-AF 70-200mm F2.8 EX Aspherical', #12
     25511.4 => 'Quantaray M-AF 35-80mm F4-5.6', #JD
-    25511.5 => 'Tokina 28-70mm F2.8-4.5 AF', #30
+    25511.5 => 'Tokina 28-70mm F2.8-4.5 AF', #IB
     25521 => 'Minolta AF 28-85mm F3.5-4.5 or Other Lens', # not New (ref 18)
     25521.1 => 'Tokina 19-35mm F3.5-4.5', #3
     25521.2 => 'Tokina 28-70mm F2.8 AT-X', #7
@@ -380,7 +401,7 @@ $VERSION = '2.29';
     25521.6 => 'Tamron AF 19-35mm F3.5-4.5', #JD (Model A10)
     25521.7 => 'Angenieux AF 28-70mm F2.6', #JD
     25521.8 => 'Tokina AT-X 17 AF 17mm F3.5', #27
-    25521.9 => 'Tokina 20-35mm F3.5-4.5 II AF', #30
+    25521.9 => 'Tokina 20-35mm F3.5-4.5 II AF', #IB
     25531 => 'Minolta AF 28-135mm F4-4.5 or Sigma Lens',
     25531.1 => 'Sigma ZOOM-alpha 35-135mm F3.5-4.5', #16
     25531.2 => 'Sigma 28-105mm F2.8-4 Aspherical', #JD
@@ -413,7 +434,7 @@ $VERSION = '2.29';
     25631.4 => 'Sigma 400mm F5.6 APO', #22
     25641 => 'Minolta AF 50mm F2.8 Macro or Sigma Lens',
     25641.1 => 'Sigma 50mm F2.8 EX Macro', #11
-    25651 => 'Minolta AF 600mm F4',
+    25651 => 'Minolta AF 600mm F4 APO', # ("APO" added - ref JR)
     25661 => 'Minolta AF 24mm F2.8 or Sigma Lens',
     25661.1 => 'Sigma 17-35mm F2.8-4 EX Aspherical', #http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,3789.msg17679.html#msg17679
     25721 => 'Minolta/Sony AF 500mm F8 Reflex',
@@ -436,7 +457,7 @@ $VERSION = '2.29';
     25858 => 'Minolta AF 35-105mm F3.5-4.5 New or Tamron Lens',
     25858.1 => 'Tamron 24-135mm F3.5-5.6', # (Model 190D)
     25881 => 'Minolta AF 70-210mm F3.5-4.5',
-    25891 => 'Minolta AF 80-200mm F2.8 APO or Tokina Lens',
+    25891 => 'Minolta AF 80-200mm F2.8 APO or Tokina Lens', # black
     25891.1 => 'Tokina 80-200mm F2.8',
     # 25901 - Note: only get this with older 1.4x and lenses with 5-digit LensTypes (ref 27)
     # 25901 - also "Minolta AF 200mm F2.8 HS-APO G + Minolta AF 1.4x APO"
@@ -444,7 +465,7 @@ $VERSION = '2.29';
     25901.1 => 'Minolta AF 600mm F4 HS-APO G + Minolta AF 1.4x APO', #27
     25911 => 'Minolta AF 35mm F1.4', #(from Sony list) (not G as per ref 13)
     25921 => 'Minolta AF 85mm F1.4 G (D)',
-    25931 => 'Minolta AF 200mm F2.8 G APO',
+    25931 => 'Minolta AF 200mm F2.8 APO', # (not "G", see 26121 - ref JR)
     25941 => 'Minolta AF 3x-1x F1.7-2.8 Macro',
     25961 => 'Minolta AF 28mm F2',
     25971 => 'Minolta AF 35mm F2 [New]', #13
@@ -468,7 +489,7 @@ $VERSION = '2.29';
     26201 => 'Minolta AF 28-70mm F2.8 G', #11
     26211 => 'Minolta AF 100-300mm F4.5-5.6 xi', # xi, not Power Zoom (ref 13/18)
     26241 => 'Minolta AF 35-80mm F4-5.6 Power Zoom',
-    26281 => 'Minolta AF 80-200mm F2.8 G', #11
+    26281 => 'Minolta AF 80-200mm F2.8 HS-APO G', #11 ("HS-APO" added, white, probably same as 1, non-HS is 25891 - ref JR)
     26291 => 'Minolta AF 85mm F1.4 New',
     26311 => 'Minolta/Sony AF 100-300mm F4.5-5.6 APO', #11
     26321 => 'Minolta AF 24-50mm F4 New',
@@ -483,9 +504,9 @@ $VERSION = '2.29';
     26721 => 'Minolta AF 24-105mm F3.5-4.5 (D)', #11
     # 30464: newer firmware versions of the Speed Booster report type 30464 (=0x7700)
     # - this is the base to which the Canon LensType is added
-    30464 => 'Metabones Canon EF Speed Booster', #Metabones
+    30464 => 'Metabones Canon EF Speed Booster', #Metabones (to this, add Canon LensType)
     45671 => 'Tokina 70-210mm F4-5.6', #22
-    45711 => 'Vivitar 70-210mm F4.5-5.6', #30
+    45711 => 'Vivitar 70-210mm F4.5-5.6', #IB
     45741 => '2x Teleconverter or Tamron or Tokina Lens', #18
     45741.1 => 'Tamron SP AF 90mm F2.5', #JD
     45741.2 => 'Tokina RF 500mm F8.0 x2', #JD
@@ -496,13 +517,16 @@ $VERSION = '2.29';
     45871 => 'Tamron AF 70-210mm F2.8 SP LD', #Fabio Suprani
     # 48128: the Speed Booster Ultra appears to report type 48128 (=0xbc00)
     # - this is the base to which the Canon LensType is added
-    48128 => 'Metabones Canon EF Speed Booster Ultra', #JR
+    48128 => 'Metabones Canon EF Speed Booster Ultra', #JR (to this, add Canon LensType)
     # 61184: older firmware versions of both the Speed Booster and the Smart Adapter
     # report type 61184 (=0xef00), and add only the lower byte of the Canon LensType (ref JR).
     # For newer firmware versions this is only used by the Smart Adapter, and
     # the full Canon LensType code is added - PH
     # the metabones adapter translates Canon L -> G, II -> II, USM -> SSM, IS -> OSS (ref JR)
-    61184 => 'Metabones Canon EF Adapter or Other Adapter', #JR (also Fotodiox or Viltrox)
+    # This offset is used by Metabones, Fotodiox, Sigma MC-11 EF-E and Viltrox Canon EF adapters.
+    61184 => 'Canon EF Adapter', #JR (to this, add Canon LensType)
+    # 65280 = 0xff00
+    65280 => 'Sigma 16mm F2.8 Filtermatic Fisheye', #IB
     # all M42-type lenses give a value of 65535 (and FocalLength=0, FNumber=1)
     65535 => 'E-Mount, T-Mount, Other Lens or no lens', #JD/JR
 #
@@ -520,48 +544,78 @@ $VERSION = '2.29';
    '65535.10' => 'Sony E PZ 16-50mm F3.5-5.6 OSS',  #PH (32793 - SELP1650)
    '65535.11' => 'Sony FE 35mm F2.8 ZA',            #JR (32794 - SEL35F28Z)
    '65535.12' => 'Sony FE 24-70mm F4 ZA OSS',       #JR (32795 - SEL2470Z)
-   '65535.13' => 'Sony E 18-200mm F3.5-6.3 OSS LE', #JR (32797 - SEL18200LE)
-   '65535.14' => 'Sony E 20mm F2.8',                #PH (32798 - SEL20F28)
-   '65535.15' => 'Sony E 35mm F1.8 OSS',            #JR (32799 - SEL35F18)
-   '65535.16' => 'Sony E PZ 18-105mm F4 G OSS',     #JR (32800 - SELP18105G)
-   '65535.17' => 'Sony FE 90mm F2.8 Macro G OSS',   #JR (32802 - SEL90M28G)
-   '65535.18' => 'Sony E 18-50mm F4-5.6',           #JR (32803 - SEL1850)
-   '65535.19' => 'Sony E PZ 18-200mm F3.5-6.3 OSS', #JR (32807 - SELP18200)
-   '65535.20' => 'Sony FE 55mm F1.8 ZA',            #JR (32808 - SEL55F18Z)
-   '65535.21' => 'Sony FE 70-200mm F4 G OSS',       #JR (32810 - SEL70200G)
-   '65535.22' => 'Sony FE 16-35mm F4 ZA OSS',       #JR (32811 - SEL1635Z)
-   '65535.23' => 'Sony FE 28-70mm F3.5-5.6 OSS',    #JR (32813 - SEL2870)
-   '65535.24' => 'Sony FE 35mm F1.4 ZA',            #JR (32814 - SEL35F14Z)
-   '65535.25' => 'Sony FE 24-240mm F3.5-6.3 OSS',   #JR (32815 - SEL24240)
-   '65535.26' => 'Sony FE 28mm F2',                 #JR (32816 - SEL28F20)
-   '65535.27' => 'Sony FE PZ 28-135mm F4 G OSS',    #JR (32817 - SELP28135G)
-   '65535.28' => 'Sony FE 21mm F2.8 (SEL28F20 + SEL075UWC)', #JR         # (32826 - SEL28F20 + SEL075UWC Ultra-wide converter)
-   '65535.29' => 'Sony FE 16mm F3.5 Fisheye (SEL28F20 + SEL057FEC)', #JR # (32827 - SEL28F20 + SEL057FEC Fisheye converter)
+   '65535.13' => 'Sony FE 85mm F1.8',               #JR (32796 - SEL85F18)
+   '65535.14' => 'Sony E 18-200mm F3.5-6.3 OSS LE', #JR (32797 or 0 - SEL18200LE)
+   '65535.15' => 'Sony E 20mm F2.8',                #PH (32798 - SEL20F28)
+   '65535.16' => 'Sony E 35mm F1.8 OSS',            #JR (32799 - SEL35F18)
+   '65535.17' => 'Sony E PZ 18-105mm F4 G OSS',     #JR (32800 - SELP18105G)
+   '65535.18' => 'Sony FE 12-24mm F4 G',            #JR (32801 - SEL1224G)
+   '65535.19' => 'Sony FE 90mm F2.8 Macro G OSS',   #JR (32802 - SEL90M28G)
+   '65535.20' => 'Sony E 18-50mm F4-5.6',           #JR (32803 - SEL1850)
+   '65535.21' => 'Sony E PZ 18-200mm F3.5-6.3 OSS', #JR (32807 - SELP18200)
+   '65535.22' => 'Sony FE 55mm F1.8 ZA',            #JR (32808 - SEL55F18Z)
+   '65535.23' => 'Sony FE 70-200mm F4 G OSS',       #JR (32810 - SEL70200G)
+   '65535.24' => 'Sony FE 16-35mm F4 ZA OSS',       #JR (32811 - SEL1635Z)
+   '65535.25' => 'Sony FE 50mm F2.8 Macro',         #JR (32812 - SEL50M28)
+   '65535.26' => 'Sony FE 28-70mm F3.5-5.6 OSS',    #JR (32813 - SEL2870)
+   '65535.27' => 'Sony FE 35mm F1.4 ZA',            #JR (32814 - SEL35F14Z)
+   '65535.28' => 'Sony FE 24-240mm F3.5-6.3 OSS',   #JR (32815 - SEL24240)
+   '65535.29' => 'Sony FE 28mm F2',                 #JR (32816 - SEL28F20)
+   '65535.30' => 'Sony FE PZ 28-135mm F4 G OSS',    #JR (32817 - SELP28135G)
+   '65535.31' => 'Sony FE 100mm F2.8 STF GM OSS',   #JR (32819 - SEL100F28GM, uses 33076 when set to 0.57m - 1.0m range)
+   '65535.32' => 'Sony E PZ 18-110mm F4 G OSS',     #JR (32820 - SELP18110G)
+   '65535.33' => 'Sony FE 24-70mm F2.8 GM',         #JR (32821 - SEL2470GM)
+   '65535.34' => 'Sony FE 50mm F1.4 ZA',            #JR (32822 - SEL50F14Z)
+   '65535.35' => 'Sony FE 85mm F1.4 GM',            #JR (32823 - SEL85F14GM)
+   '65535.36' => 'Sony FE 50mm F1.8',               #JR (32824 - SEL50F18F with trailing "F" as compared to 32790)
+   '65535.37' => 'Sony FE 21mm F2.8 (SEL28F20 + SEL075UWC)', #JR (32826 - SEL28F20 + SEL075UWC Ultra-wide converter)
+   '65535.38' => 'Sony FE 16mm F3.5 Fisheye (SEL28F20 + SEL057FEC)', #JR (32827 - SEL28F20 + SEL057FEC Fisheye converter)
+   '65535.39' => 'Sony FE 70-300mm F4.5-5.6 G OSS', #JR (32828 - SEL70300G)
+   '65535.40' => 'Sony FE 100-400mm F4.5-5.6 GM OSS', #JR (32829 - SEL100400GM)
+   '65535.41' => 'Sony FE 70-200mm F2.8 GM OSS',    #JR (32830 - SEL70200GM)
+   '65535.42' => 'Sony FE 16-35mm F2.8 GM',         #JR (32831 - SEL1635GM)
+   '65535.43' => 'Sony FE 70-200mm F2.8 GM OSS + 1.4X Teleconverter', #JR (33072 - SEL70200GM + SEL14TC)
+   '65535.44' => 'Sony FE 70-200mm F2.8 GM OSS + 2X Teleconverter', #JR (33073 - SEL70200GM + SEL20TC)
+   '65535.45' => 'Sony FE 100-400mm F4.5-5.6 GM OSS + 1.4X Teleconverter', #JR (33077 - SEL100400GM + SEL14TC)
+   '65535.46' => 'Sony FE 100-400mm F4.5-5.6 GM OSS + 2X Teleconverter', #JR (33078 - SEL100400GM + SEL20TC)
 #
 # 3rd party E lenses
 #
-    '65535.30' => 'Sigma 19mm F2.8 [EX] DN', #JR
-    '65535.31' => 'Sigma 30mm F2.8 [EX] DN', #JR
-    '65535.32' => 'Sigma 60mm F2.8 DN', #JR
-    '65535.33' => 'Tamron 18-200mm F3.5-6.3 Di III VC', #JR (Model B011)
-    '65535.34' => 'Zeiss Batis 25mm F2', #JR
-    '65535.35' => 'Zeiss Batis 85mm F1.8', #JR
-    '65535.36' => 'Zeiss Loxia 21mm F2.8', #JR
-    '65535.37' => 'Zeiss Loxia 35mm F2', #JR
-    '65535.38' => 'Zeiss Loxia 50mm F2', #JR
-    '65535.39' => 'Zeiss Touit 12mm F2.8', #JR
-    '65535.40' => 'Zeiss Touit 32mm F1.8', #JR
-    '65535.41' => 'Zeiss Touit 50mm F2.8 Macro', #JR
+   '65535.47' => 'Samyang AF 50mm F1.4 FE',         #JR (32789)
+   '65535.48' => 'Samyang AF 14mm F2.8 FE',         #JR (32790 and 51505)
+   '65535.49' => 'Samyang AF 35mm F2.8 FE',         #PH (51505)
+   '65535.50' => 'Sigma 19mm F2.8 [EX] DN',         #JR (0)
+   '65535.51' => 'Sigma 30mm F2.8 [EX] DN',         #JR (0)
+   '65535.52' => 'Sigma 60mm F2.8 DN',              #JR (0)
+   '65535.53' => 'Sigma 30mm F1.4 DC DN | C',       #IB (50480) (016)
+   '65535.54' => 'Tamron 18-200mm F3.5-6.3 Di III VC', #JR (0 - Model B011)
+   '65535.55' => 'Tokina Firin 20mm F2 FE MF',      #JR (0)
+   '65535.56' => 'Voigtlander SUPER WIDE-HELIAR 15mm F4.5 III', #JR (50992)
+   '65535.57' => 'Voigtlander HELIAR-HYPER WIDE 10mm F5.6',     #IB (50993)
+   '65535.58' => 'Voigtlander ULTRA WIDE-HELIAR 12mm F5.6 III', #IB (50994)
+   '65535.59' => 'Voigtlander MACRO APO-LANTHAR 65mm F2 Aspherical', #JR (50995)
+   '65535.60' => 'Voigtlander NOKTON 40mm F1.2 Aspherical', #JR (50996)
+   '65535.61' => 'Zeiss Touit 12mm F2.8',           #JR (49201 or 0)
+   '65535.62' => 'Zeiss Touit 32mm F1.8',           #JR (49202 or 0)
+   '65535.63' => 'Zeiss Touit 50mm F2.8 Macro',     #JR (49203 or 0)
+   '65535.64' => 'Zeiss Batis 25mm F2',             #JR (49216)
+   '65535.65' => 'Zeiss Batis 85mm F1.8',           #JR (49217)
+   '65535.66' => 'Zeiss Batis 18mm F2.8',           #IB (49218)
+   '65535.67' => 'Zeiss Batis 135mm F2.8',          #IB (49219)
+   '65535.68' => 'Zeiss Loxia 50mm F2',             #JR (49232 or 0)
+   '65535.69' => 'Zeiss Loxia 35mm F2',             #JR (49233 or 0)
+   '65535.70' => 'Zeiss Loxia 21mm F2.8',           #JR (49234)
+   '65535.71' => 'Zeiss Loxia 85mm F2.4',           #JR (49235)
 #
 # other lenses
 #
-    '65535.42' => 'Arax MC 35mm F2.8 Tilt+Shift', #JD
-    '65535.43' => 'Arax MC 80mm F2.8 Tilt+Shift', #JD
-    '65535.44' => 'Zenitar MF 16mm F2.8 Fisheye M42', #JD
-    '65535.45' => 'Samyang 500mm Mirror F8.0', #19
-    '65535.46' => 'Pentacon Auto 135mm F2.8', #19
-    '65535.47' => 'Pentacon Auto 29mm F2.8', #19
-    '65535.48' => 'Helios 44-2 58mm F2.0', #19
+   '65535.72' => 'Arax MC 35mm F2.8 Tilt+Shift', #JD
+   '65535.73' => 'Arax MC 80mm F2.8 Tilt+Shift', #JD
+   '65535.74' => 'Zenitar MF 16mm F2.8 Fisheye M42', #JD
+   '65535.75' => 'Samyang 500mm Mirror F8.0', #19
+   '65535.76' => 'Pentacon Auto 135mm F2.8', #19
+   '65535.77' => 'Pentacon Auto 29mm F2.8', #19
+   '65535.78' => 'Helios 44-2 58mm F2.0', #19
 );
 
 %minoltaTeleconverters = (
@@ -779,6 +833,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
         OffsetPair => 0x0089, # point to associated byte count
         DataTag => 'PreviewImage',
         Writable => 'int32u',
+        WriteGroup => 'MakerNotes',
         Protected => 2,
         # Note: Sony also uses this tag in A100 ARW images, but it points
         #       to the same data as JpgFromRaw
@@ -788,6 +843,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
         OffsetPair => 0x0088, # point to associated offset
         DataTag => 'PreviewImage',
         Writable => 'int32u',
+        WriteGroup => 'MakerNotes',
         Protected => 2,
     },
     0x0100 => { #10
@@ -813,7 +869,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
     0x0102 => {
         Name => 'MinoltaQuality',
         Writable => 'int32u',
-        # PrintConv strings conform with Minolta reference manual (ref 4)
+        # PrintConv strings conform with Minolta reference manual (ref NJ)
         # (note that Minolta calls an uncompressed TIFF image "Super fine")
         PrintConv => {
             0 => 'Raw',
@@ -833,7 +889,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
             Condition => '$self->{Model} =~ /^DiMAGE (A2|7Hi)$/',
             Notes => 'quality for DiMAGE A2/7Hi',
             Priority => 0, # lower priority because this doesn't work for A200
-            PrintConv => { #4
+            PrintConv => { #NJ
                 0 => 'Raw',
                 1 => 'Super Fine',
                 2 => 'Fine',
@@ -982,7 +1038,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
         models (and sometimes even between different firmware versions), so this
         information may not be as reliable as it should be.  Because of this, tags
         in the following tables are set to lower priority to prevent them from
-        superceding the values of same-named tags in other locations when duplicate
+        superseding the values of same-named tags in other locations when duplicate
         tags are disabled.
     },
     1 => {
@@ -1022,7 +1078,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
     },
     5 => {
         Name => 'MinoltaQuality',
-        PrintConv => { #4
+        PrintConv => { #NJ
             0 => 'Raw',
             1 => 'Super Fine',
             2 => 'Fine',
@@ -2666,7 +2722,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
             return \ "Binary data 7404 bytes" unless $et->Options('Binary');
             my @dat = unpack('n*', $val);  # for Big-endian
             # TIFF header for a 16-bit RGB 10dpi 40x30 image
-            $val = Image::ExifTool::Sony::MakeTiffHeader(40,30,3,16,10);
+            $val = Image::ExifTool::MakeTiffHeader(40,30,3,16,10);
             # re-order data to RGB pixels
             my ($i, @val);
             for ($i=0; $i<40*30; ++$i) {
@@ -2716,7 +2772,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
         Format => 'int8s',
         ValueConv => '$val / 8',
         ValueConvInv => '$val * 8',
-        PrintConv => '$val ? sprintf("%+.1f",$val) : $val',
+        PrintConv => '$val ? sprintf("%+.1f",$val) : 0',
         PrintConvInv => 'Image::ExifTool::Exif::ConvertFraction($val)',
     },
     0x49c1 => {
@@ -2725,7 +2781,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
         Format => 'int8s',
         ValueConv => '$val / 8',
         ValueConvInv => '$val * 8',
-        PrintConv => '$val ? sprintf("%+.1f",$val) : $val',
+        PrintConv => '$val ? sprintf("%+.1f",$val) : 0',
         PrintConvInv => 'Image::ExifTool::Exif::ConvertFraction($val)',
     },
     0x49c2 => {
@@ -2930,7 +2986,7 @@ and write Minolta RAW (MRW) images.
 
 =head1 AUTHOR
 
-Copyright 2003-2016, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
