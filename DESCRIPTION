@@ -19,7 +19,7 @@ Description: Reads EXIF data using ExifTool <http://www.sno.phy.queensu.ca/~phil
     Samsung, Sanyo, Sigma/Foveon and Sony.
 License: GPL-2
 LazyData: TRUE
-Imports: curl, purrr, dplyr, tibble, jsonlite, foreach, plyr, utils
+Imports: curl, purrr, dplyr, tibble, jsonlite, utils
 SystemRequirements: Perl
 URL: https://github.com/paleolimbot/exifr
 BugReports: https://github.com/paleolimbot/exifr/issues
