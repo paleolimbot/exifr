@@ -2,10 +2,13 @@
 % Please edit documentation in R/read_exif.R
 \name{exiftool_call}
 \alias{exiftool_call}
+\alias{exiftool_version}
 \title{Call exiftool from R}
 \usage{
-exiftool_call(args = c("--help"), fnames = NULL, intern = FALSE, ...,
+exiftool_call(args = NULL, fnames = NULL, intern = FALSE, ...,
   quiet = FALSE)
+
+exiftool_version()
 }
 \arguments{
 \item{args}{a list of non-shell quoted arguments (e.g. \code{-n -csv})}
@@ -26,6 +29,7 @@ The exit code if \code{intern=FALSE}, or the standard output as a character vect
 Uses \code{system()} to run a basic call to \code{exiftool}.
 }
 \examples{
-exiftool_call("--help")
+exiftool_call()
+exiftool_version()
 
 }

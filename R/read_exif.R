@@ -14,21 +14,24 @@
 #' Casio, FLIR, FujiFilm, GE, HP, JVC/Victor, Kodak, Leaf,
 #' Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson,
 #' Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo,
-#' Sigma/Foveon and Sony.
+#' Sigma/Foveon and Sony. For more information, see the
+#' \href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool website}.
 #'
-#' For more information, see the \href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool
-#' website}.
+#' Note that binary tags such as thumbnails are loaded as base64-encoded
+#' strings that start with "base64:".
 #'
 #' @param path A vector of filenames
-#' @param tags A vector of tags to output. It is a good idea to specify this when reading large numbers
-#'   of files, as it decreases the output overhead significantly.
+#' @param tags A vector of tags to output. It is a good idea to specify this
+#'   when reading large numbers of files, as it decreases the output overhead
+#'   significantly. Spaces will be stripped in the output data frame. This
+#'   parameter is not case-sensitive.
 #' @param recursive TRUE to pass the "-r" option to ExifTool
 #' @param args Additional arguments
 #' @param quiet Use FALSE to display diagnostic information
 #'
-#' @return A data frame (tibble) with columns SourceFile and one per tag read in each file.
-#'   The number of rows may differ, particularly if recursive is set to TRUE, but in general
-#'   will be one per file.
+#' @return A data frame (tibble) with columns SourceFile and one per tag read in
+#'   each file. The number of rows may differ, particularly if recursive is set
+#'   to TRUE, but in general will be one per file.
 #' @export
 #'
 #' @examples
@@ -49,14 +52,18 @@ read_exif <- function(path, tags = NULL, recursive = FALSE, args = NULL, quiet =
   # as do directories without recursive = TRUE)
   if(recursive) {
     missing_dirs <- path[!dir.exists(path)]
-    if(length(missing_dirs) > 0) stop("Did you mean recursive = TRUE? ",
-                                      "The following directories are missing (or are not directories). ",
-                                       paste(missing_files, collapse = ", "))
+    if(length(missing_dirs) > 0) {
+      stop("Did you mean recursive = TRUE? ",
+           "The following directories are missing (or are not directories). ",
+            paste(missing_files, collapse = ", "))
+      }
   } else {
     missing_files <- path[!file.exists(path) | dir.exists(path)]
-    if(length(missing_files) > 0) stop("Did you mean recursive = TRUE? ",
-                                       "The following files are missing (or are not files): ",
-                                       paste(missing_files, collapse = ", "))
+    if(length(missing_files) > 0) {
+      stop("Did you mean recursive = TRUE? ",
+           "The following files are missing (or are not files): ",
+           paste(missing_files, collapse = ", "))
+      }
   }
 
   if(length(path) == 0) {
@@ -68,12 +75,19 @@ read_exif <- function(path, tags = NULL, recursive = FALSE, args = NULL, quiet =
   }
 
   if(!is.null(tags)) {
-    # tags cannot have spaces, or they are interpreted as filenames
-    if(any(grepl("\\s", tags))) stop("tags cannot contain whitespace")
+    # tags cannot have spaces...whitespace is stripped by ExifTool
+    tags <- gsub("\\s", "", tags)
     args <- c(paste0("-", tags), args)
   }
 
-  args <- c("-n", "-j", "-q", args)
+  # required args are -n for numeric output,
+  # -j for JSON output, -q for quiet, and -b to make sure
+  # output is base64 encoded
+  args <- unique(c("-n", "-j", "-q", "-b", args))
+  # an extra -q further silences warnings
+  if(quiet) {
+    args <- c(args, "-q")
+  }
 
   # ---- generate system commands ----
 
@@ -137,12 +151,20 @@ read_exif_base <- function(command, quiet = TRUE) {
 #' @export
 #'
 #' @examples
-#' exiftool_call("--help")
+#' exiftool_call()
+#' exiftool_version()
 #'
-exiftool_call <- function(args=c("--help"), fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
+exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
   command <- exiftool.command(args, fnames)
   if(!quiet) message(command)
   system(command, intern=intern, ...)
+}
+
+#' @rdname exiftool_call
+#' @export
+exiftool_version <- function() {
+  read_exif(system.file("images/Canon.jpg", package = "exifr"),
+            tags = "ExifToolVersion")$ExifToolVersion
 }
 
 # private helper command to generate call to exiftool

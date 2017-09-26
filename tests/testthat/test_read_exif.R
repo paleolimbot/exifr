@@ -7,7 +7,7 @@ test_files <- list.files(images_folder, recursive=TRUE, full.names=TRUE)
 test_that("read_exif reads images in the inst directory", {
   df <- read_exif(test_files, quiet = FALSE)
   expect_equal(nrow(df), 2)
-  expect_equal(ncol(df), 268)
+  expect_equal(ncol(df), 267)
   expect_true("SourceFile" %in% colnames(df))
   expect_true(setequal(test_files, df$SourceFile))
 })
@@ -35,32 +35,70 @@ test_that("recursive option works", {
   # check results are identical
   df1 <- read_exif(images_folder, recursive = TRUE)
   df2 <- read_exif(list.files(images_folder, full.names = TRUE))
-  expect_equal(colnames(df1), colnames(df2))
+  expect_true(setequal(colnames(df1), colnames(df2)))
   # identical_cols <- purrr::map2_lgl(df1, df2, identical)
   df1$FileAccessDate <- NULL
   df2$FileAccessDate <- NULL
-  expect_identical(df1[order(df1$SourceFile),], df2[order(df2$SourceFile),])
+  cols <- unique(c(colnames(df1), colnames(df2)))
+  expect_identical(df1[order(df1$SourceFile), cols],
+                   df2[order(df2$SourceFile), cols])
 })
 
 test_that("tags option works", {
   df <- read_exif(test_files, tags = c("FileName", "ImageSize"))
   expect_equal(colnames(df), c("SourceFile", "FileName", "ImageSize"))
-  df2 <- read_exif(test_files, tags = c("NotATag"))
+  df2 <- read_exif(test_files, tags = c("NotATag"), quiet = TRUE)
   expect_equal(colnames(df2), "SourceFile")
-  expect_error(read_exif(test_files, tags = "has space"), "tags cannot contain whitespace")
+  expect_identical(read_exif(test_files, tags = "file name"),
+                   read_exif(test_files, tags = "filename"))
 })
 
 test_that("command-line length is properly dealt with", {
-  files <- rep(test_files, 1000)
+  files <- rep(test_files, 500)
   df <- read_exif(files, quiet = FALSE)
   expect_true(setequal(df$SourceFile, test_files))
   df$FileAccessDate <- NULL
   expect_equal(nrow(unique(df)), 2)
 })
 
-test_that("included exiftool with perl works as well as command-line", {
-  internal_exiftool <- paste("perl", system.file("exiftool/exiftool.pl", package = "exifr"))
-  old_opts <- options(exifr.exiftoolcommand = internal_exiftool)
-  expect_is(read_exif(test_files), "data.frame")
-  options(old_opts)
+# # perl isn't necessarily on the path
+# test_that("included exiftool with perl works as well as command-line", {
+#   internal_exiftool <- paste("perl", system.file("exiftool/exiftool.pl", package = "exifr"))
+#   old_opts <- options(exifr.exiftoolcommand = internal_exiftool)
+#   expect_is(read_exif(test_files), "data.frame")
+#   options(old_opts)
+# })
+
+test_that("binary tags are loaded as base64", {
+  btag_file <- system.file("images/binary_tag.JPG", package = "exifr")
+  # read in only binary columns
+  df <- read_exif(btag_file,
+                  tags = c("DataDump", "RecognizedFace1Name",
+                           "RecognizedFace1Age", "RecognizedFace2Name",
+                           "RecognizedFace2Age", "RecognizedFace3Name",
+                           "RecognizedFace3Age",
+                           "Title", "BabyName", "Location", "ThumbnailImage"))
+
+  df$SourceFile <- NULL
+  expect_true(all(grepl("^base64:", unlist(df))))
+})
+
+test_that("exiftool version function works", {
+  expect_equal(exiftool_version(), 10.61)
+})
+
+test_that("exiftool call function works", {
+  # check that call function output works
+  expect_match(exiftool_call(args = c("-j", "-exiftoolversion"),
+                             system.file("images/Canon.jpg", package = "exifr"),
+                             intern = TRUE)[3],
+               '"ExifToolVersion": 10\\.61')
+  # test that quiet argument suppresses command output
+  expect_message(exiftool_call(args = c("-j", "-exiftoolversion"),
+                               system.file("images/Canon.jpg", package = "exifr"),
+                               intern = TRUE),
+                 "-j -exiftoolversion")
+  expect_silent(exiftool_call(args = c("-j", "-exiftoolversion"),
+                              system.file("images/Canon.jpg", package = "exifr"),
+                              intern = TRUE, quiet = TRUE))
 })

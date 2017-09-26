@@ -10,8 +10,10 @@ read_exif(path, tags = NULL, recursive = FALSE, args = NULL,
 \arguments{
 \item{path}{A vector of filenames}
 
-\item{tags}{A vector of tags to output. It is a good idea to specify this when reading large numbers
-of files, as it decreases the output overhead significantly.}
+\item{tags}{A vector of tags to output. It is a good idea to specify this
+when reading large numbers of files, as it decreases the output overhead
+significantly. Spaces will be stripped in the output data frame. This
+parameter is not case-sensitive.}
 
 \item{recursive}{TRUE to pass the "-r" option to ExifTool}
 
@@ -20,9 +22,9 @@ of files, as it decreases the output overhead significantly.}
 \item{quiet}{Use FALSE to display diagnostic information}
 }
 \value{
-A data frame (tibble) with columns SourceFile and one per tag read in each file.
-  The number of rows may differ, particularly if recursive is set to TRUE, but in general
-  will be one per file.
+A data frame (tibble) with columns SourceFile and one per tag read in
+  each file. The number of rows may differ, particularly if recursive is set
+  to TRUE, but in general will be one per file.
 }
 \description{
 Reads EXIF data into a \code{data.frame} by calling the ExifTool command-line
@@ -39,10 +41,11 @@ AFCP and ID3, as well as the maker notes of many digital cameras by Canon,
 Casio, FLIR, FujiFilm, GE, HP, JVC/Victor, Kodak, Leaf,
 Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson,
 Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo,
-Sigma/Foveon and Sony.
+Sigma/Foveon and Sony. For more information, see the
+\href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool website}.
 
-For more information, see the \href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool
-website}.
+Note that binary tags such as thumbnails are loaded as base64-encoded
+strings that start with "base64:".
 }
 \examples{
 files <- list.files(path.package("exifr"), recursive=TRUE, pattern="*.jpg", full.names=TRUE)

@@ -3,4 +3,5 @@
 export(exifr)
 export(exiftool.call)
 export(exiftool_call)
+export(exiftool_version)
 export(read_exif)
