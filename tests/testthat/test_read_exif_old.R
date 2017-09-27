@@ -63,7 +63,10 @@ test_that("exifr() output matches previous output", {
                                LightValue = 5.61470984411521, RedBalance = 2.06734816596512),
                           class = "data.frame", row.names = c(NA, -1L))
   cannon_new <- exifr(system.file("images/Canon.jpg", package = "exifr"))
-  expect_true(setequal(colnames(cannon_new), colnames(cannon_old)))
+
+  # this is not a thing on Mac and makes the test fail on windows
+  new_names <- setdiff(colnames(cannon_new), "FileCreateDate")
+  expect_length(setdiff(new_names, colnames(cannon_old)), 0)
 
   # some columns aren't quite the same due to guessing by read.csv
   cols <- setdiff(names(cannon_old), c("FileAccessDate", "FileModifyDate", "FileInodeChangeDate",
@@ -79,9 +82,9 @@ test_that("exifr() output matches previous output", {
 
 test_that("deprecation message exists for exiftool.call", {
   expect_identical(
-    exiftool.call(args = "--help", intern = TRUE),
-    exiftool_call(args = "--help", intern = TRUE)
+    exiftool.call(args = "-ver", intern = TRUE),
+    exiftool_call(args = "-ver", intern = TRUE)
   )
-  expect_message(exiftool.call(args = "--help", intern = TRUE),
+  expect_message(exiftool.call(args = "--ver", intern = TRUE),
                  "exiftool\\.call has been deprecated")
 })

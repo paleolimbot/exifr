@@ -35,7 +35,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   }
 
   for(com in command) {
-    if(test_command(paste(com, "--help"), quiet = quiet)) {
+    if(test_command(paste(com, "-ver"), quiet = quiet)) {
       if(!quiet) message("ExifTool found at ", com)
       options(exifr.exiftoolcommand = com)
       return(invisible(com))

@@ -130,9 +130,10 @@ read_exif_base <- function(command, quiet = TRUE) {
   # run command
   if(!quiet) message(command)
   return_value <- system(command, intern = TRUE)
+  return_value_collapsed <- paste0(return_value, collapse = "")
 
   # read, return the output
-  tibble::as_tibble(jsonlite::fromJSON(return_value))
+  tibble::as_tibble(jsonlite::fromJSON(return_value_collapsed))
 }
 
 
@@ -163,8 +164,7 @@ exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet
 #' @rdname exiftool_call
 #' @export
 exiftool_version <- function() {
-  read_exif(system.file("images/Canon.jpg", package = "exifr"),
-            tags = "ExifToolVersion")$ExifToolVersion
+  as.numeric(exiftool_call(args = "-ver", intern = TRUE, quiet = TRUE))
 }
 
 # private helper command to generate call to exiftool

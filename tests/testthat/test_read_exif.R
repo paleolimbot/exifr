@@ -55,9 +55,9 @@ test_that("tags option works", {
 
 test_that("command-line length is properly dealt with", {
   files <- rep(test_files, 500)
-  df <- read_exif(files, quiet = FALSE)
+  df <- read_exif(files, tags = c("FileName", "ImageSize"),
+                  args = "-fast", quiet = FALSE)
   expect_true(setequal(df$SourceFile, test_files))
-  df$FileAccessDate <- NULL
   expect_equal(nrow(unique(df)), 2)
 })
 
@@ -84,7 +84,7 @@ test_that("binary tags are loaded as base64", {
 })
 
 test_that("exiftool version function works", {
-  expect_equal(exiftool_version(), 10.61)
+  expect_is(exiftool_version(), "numeric")
 })
 
 test_that("exiftool call function works", {
@@ -92,7 +92,7 @@ test_that("exiftool call function works", {
   expect_match(exiftool_call(args = c("-j", "-exiftoolversion"),
                              system.file("images/Canon.jpg", package = "exifr"),
                              intern = TRUE)[3],
-               '"ExifToolVersion": 10\\.61')
+               '"ExifToolVersion": [0-9.]+')
   # test that quiet argument suppresses command output
   expect_message(exiftool_call(args = c("-j", "-exiftoolversion"),
                                system.file("images/Canon.jpg", package = "exifr"),
