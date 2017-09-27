@@ -69,10 +69,14 @@ test_that("exifr() output matches previous output", {
   expect_length(setdiff(new_names, colnames(cannon_old)), 0)
 
   # some columns aren't quite the same due to guessing by read.csv
+  # LensType and LensID values have changed between 10.1 and 10.61;
+  # related to version of ExifTool not this package
   cols <- setdiff(names(cannon_old), c("FileAccessDate", "FileModifyDate", "FileInodeChangeDate",
                                        "ExifVersion", "UserComment", "Directory", "SourceFile",
                                        "FlashpixVersion", "InteropVersion",
-                                       "FilePermissions"))
+                                       "FilePermissions", "ExifToolVersion",
+                                       "LensID", "LensType"))
+
   expect_identical(cannon_old[cols], as.data.frame(cannon_new[cols]))
 
   # check for deprecation message
