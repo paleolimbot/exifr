@@ -1,8 +1,8 @@
 Package: exifr
 Type: Package
 Title: EXIF Image Data in R
-Version: 0.2
-Date: 2017-09-24
+Version: 0.2.1
+Date: 2017-10-14
 Authors@R: c(person("Dewey", "Dunnington", role = c("aut", "cre"),
 				email = "dewey@fishandwhistle.net"),
 			person("Phil", "Harvey", role = "aut"))

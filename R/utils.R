@@ -22,9 +22,12 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   if(is.null(command)) {
     # use default list of possible locations
     command <- c(getOption("exifr.exiftoolcommand"),
-                 "exiftool",
-                 paste(shQuote(perl_path),
-                       shQuote(system.file("exiftool/exiftool.pl", package = "exifr"))))
+                 "exiftool")
+    # check if internal exiftool exists before testing the command
+    internal_exiftool <- system.file("exiftool/exiftool.pl", package = "exifr")
+    if(internal_exiftool != "") {
+      command <- c(command, paste(shQuote(perl_path), shQuote(internal_exiftool)))
+    }
   } else if(length(command) == 0) {
     command <- character(0)
   } else {
@@ -35,7 +38,11 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   }
 
   for(com in command) {
-    if(test_command(paste(com, "-ver"), quiet = quiet)) {
+    # automatically fail perl_path ''
+    if(com == paste(shQuote(perl_path), shQuote(NULL))) {
+      next
+    }
+    if(test_exiftool(paste(com, "-ver"), quiet = quiet)) {
       if(!quiet) message("ExifTool found at ", com)
       options(exifr.exiftoolcommand = com)
       return(invisible(com))
@@ -95,7 +102,7 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
   }
 
   for(p in perl_path) {
-    if(test_command(paste(shQuote(p), "--version"), quiet = quiet)) {
+    if(test_perl(paste(shQuote(p), "--version"), quiet = quiet)) {
       if(!quiet) message("perl found at ", p)
       options(exifr.perlpath = p)
       return(invisible(p))
@@ -107,10 +114,24 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
        ". Specify perl location using options(exifr.perlpath='my/path/to/perl')")
 }
 
-test_command <- function(command, quiet = TRUE) {
-  if(!quiet) message("Trying command: ", command)
+test_perl <- function(command, quiet = TRUE) {
+  if(!quiet) message("Trying perl command: ", command)
   suppressWarnings(suppressMessages(0==try(system(command, ignore.stdout = TRUE,
     ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
+}
+
+test_exiftool <- function(command, quiet = TRUE) {
+  if(!quiet) message("Trying exiftool command: ", command)
+  command_works <- suppressWarnings(suppressMessages(0==try(system(command, ignore.stdout = TRUE,
+                   ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
+  if(command_works) {
+    # check that version is a numeric value like 10.111
+    ver_string <- paste(system(command, intern = TRUE), collapse = "\n")
+    ver_number <- suppressWarnings(as.numeric(ver_string))
+    return(!is.na(ver_number))
+  } else {
+    return(FALSE)
+  }
 }
 
 find_writable <- function(install_location) {

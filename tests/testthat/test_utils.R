@@ -25,3 +25,11 @@ test_that("exiftool install works properly", {
   unlink(install_loc, recursive = TRUE)
   options(exifr.exiftoolcommand = old_exiftool)
 })
+
+test_that("empty strings do not pass configure_exiftool()", {
+  old_exiftool <- getOption("exifr.exiftoolcommand")
+  expect_error(configure_exiftool(command = ""),
+               "Could not find ExifTool at any of the following commands")
+  options(exifr.exiftoolcommand = old_exiftool)
+})
+
