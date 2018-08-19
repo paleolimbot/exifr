@@ -3,6 +3,8 @@
 exifr
 =====
 
+[![Travis-CI Build Status](https://travis-ci.org/paleolimbot/exifr.svg?branch=master)](https://travis-ci.org/paleolimbot/exifr) [![Coverage Status](https://img.shields.io/codecov/c/github/paleolimbot/exifr/master.svg)](https://codecov.io/github/paleolimbot/exifr?branch=master)
+
 Ever needed to read in EXIF data from images or other files in R? [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) by Phil Harvey is the most comprenesive tool available for reading, writing and editing meta information in a wide variety of files. ExifTool supports many different metadata formats including EXIF, GPS, IPTC, XMP, JFIF, GeoTIFF, ICC Profile, Photoshop IRB, FlashPix, AFCP and ID3, as well as the maker notes of many digital cameras by Canon, Casio, FLIR, FujiFilm, GE, HP, JVC/Victor, Kodak, Leaf, Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson, Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo, Sigma/Foveon and Sony. This package provides a thin wrapper around [ExifTool](http://www.sno.phy.queensu.ca/~phil/exiftool/) allowing the reading of image file metadata with a single command.
 
 Installation
@@ -27,8 +29,7 @@ If you can load the package, everything should be installed correctly:
 
 ``` r
 library(exifr)
-#> Trying 'exiftool' on the console...
-#> Found
+#> Using ExifTool version 11.1
 ```
 
 Example
@@ -37,48 +38,49 @@ Example
 It makes the most sense to use the `read_exif()` function with `list.files()`, but it will also process directories (when using `recursive = TRUE`).
 
 ``` r
-image_files <- list.files(system.file("images", package = "exifr"), 
-                          full.names = TRUE)
+image_files <- list.files(system.file("images", package = "exifr"), full.names = TRUE)
 read_exif(image_files)
-#> # A tibble: 2 x 268
-#>                                                                    SourceFile
-#>                                                                         <chr>
-#> 1 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> 2 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> # ... with 267 more variables: ExifToolVersion <dbl>, FileName <chr>,
-#> #   Directory <chr>, FileSize <int>, FileModifyDate <chr>,
-#> #   FileAccessDate <chr>, FileInodeChangeDate <chr>,
-#> #   FilePermissions <int>, FileType <chr>, FileTypeExtension <chr>,
-#> #   MIMEType <chr>, ExifByteOrder <chr>, Make <chr>, Model <chr>,
-#> #   Orientation <int>, XResolution <int>, YResolution <int>,
-#> #   ResolutionUnit <int>, ModifyDate <chr>, YCbCrPositioning <int>,
-#> #   ExposureTime <dbl>, FNumber <dbl>, ISO <int>, ExifVersion <chr>,
-#> #   DateTimeOriginal <chr>, CreateDate <chr>,
+#> # A tibble: 2 x 271
+#>   SourceFile   ExifToolVersion FileName Directory  FileSize FileModifyDate
+#>   <chr>                  <dbl> <chr>    <chr>         <int> <chr>         
+#> 1 /Library/Fr…            11.1 binary_… /Library/…    13726 2018:08:19 12…
+#> 2 /Library/Fr…            11.1 Canon.j… /Library/…     2697 2018:08:19 12…
+#> # ... with 265 more variables: FileAccessDate <chr>,
+#> #   FileInodeChangeDate <chr>, FilePermissions <int>, FileType <chr>,
+#> #   FileTypeExtension <chr>, MIMEType <chr>, JFIFVersion <chr>,
+#> #   ExifByteOrder <chr>, Make <chr>, Model <chr>, Orientation <int>,
+#> #   XResolution <int>, YResolution <int>, ResolutionUnit <int>,
+#> #   Software <chr>, ModifyDate <chr>, Artist <chr>,
+#> #   YCbCrPositioning <int>, ExposureTime <dbl>, FNumber <dbl>,
+#> #   ExposureProgram <int>, ISO <int>, SensitivityType <int>,
+#> #   ExifVersion <chr>, DateTimeOriginal <chr>, CreateDate <chr>,
 #> #   ComponentsConfiguration <chr>, CompressedBitsPerPixel <int>,
-#> #   ShutterSpeedValue <int>, ApertureValue <dbl>, MaxApertureValue <dbl>,
-#> #   Flash <int>, FocalLength <dbl>, MacroMode <int>, SelfTimer <int>,
-#> #   Quality <int>, CanonFlashMode <int>, ContinuousDrive <int>,
-#> #   FocusMode <int>, RecordMode <int>, CanonImageSize <int>,
-#> #   EasyMode <int>, DigitalZoom <int>, Contrast <int>, Saturation <int>,
-#> #   Sharpness <int>, CameraISO <chr>, MeteringMode <int>,
-#> #   FocusRange <int>, CanonExposureMode <int>, LensType <int>,
-#> #   MaxFocalLength <int>, MinFocalLength <int>, FocalUnits <int>,
-#> #   MaxAperture <int>, MinAperture <dbl>, FlashActivity <int>,
-#> #   FlashBits <int>, ZoomSourceWidth <int>, ZoomTargetWidth <int>,
-#> #   ManualFlashOutput <int>, ColorTone <int>, FocalPlaneXSize <dbl>,
-#> #   FocalPlaneYSize <dbl>, AutoISO <int>, BaseISO <int>, MeasuredEV <dbl>,
-#> #   TargetAperture <dbl>, ExposureCompensation <dbl>, WhiteBalance <int>,
-#> #   SlowShutter <int>, SequenceNumber <int>, OpticalZoomCode <int>,
-#> #   FlashGuideNumber <int>, FlashExposureComp <int>,
-#> #   AutoExposureBracketing <int>, AEBBracketValue <int>,
-#> #   ControlMode <int>, FocusDistanceUpper <dbl>, FocusDistanceLower <dbl>,
-#> #   MeasuredEV2 <dbl>, BulbDuration <int>, CameraType <int>,
-#> #   AutoRotate <int>, NDFilter <int>, SelfTimer2 <int>, BracketMode <int>,
-#> #   BracketValue <int>, BracketShotNumber <int>, CanonImageType <chr>,
-#> #   CanonFirmwareVersion <chr>, SerialNumber <int>,
-#> #   SerialNumberFormat <dbl>, FileNumber <int>, OwnerName <chr>,
-#> #   CanonModelID <dbl>, CanonFileLength <int>, MeasuredRGGB <chr>,
-#> #   WB_RGGBLevelsAuto <chr>, WB_RGGBLevelsDaylight <chr>, ...
+#> #   ExposureCompensation <dbl>, MaxApertureValue <dbl>,
+#> #   MeteringMode <int>, LightSource <int>, Flash <int>, FocalLength <dbl>,
+#> #   Warning <chr>, ImageQuality <int>, FirmwareVersion <chr>,
+#> #   WhiteBalance <int>, FocusMode <int>, AFAreaMode <chr>,
+#> #   ImageStabilization <int>, MacroMode <int>, ShootingMode <int>,
+#> #   Audio <int>, DataDump <chr>, WhiteBalanceBias <int>, FlashBias <int>,
+#> #   InternalSerialNumber <chr>, PanasonicExifVersion <chr>,
+#> #   ColorEffect <int>, TimeSincePowerOn <dbl>, BurstMode <int>,
+#> #   SequenceNumber <int>, ContrastMode <int>, NoiseReduction <int>,
+#> #   SelfTimer <int>, Rotation <int>, AFAssistLamp <int>, ColorMode <int>,
+#> #   OpticalZoomMode <int>, ConversionLens <int>, TravelDay <int>,
+#> #   WorldTimeLocation <int>, ProgramISO <int>, AdvancedSceneType <int>,
+#> #   FacesDetected <int>, AFPointPosition <chr>, NumFacePositions <int>,
+#> #   Face1Position <chr>, Face2Position <chr>, Face3Position <chr>,
+#> #   Face4Position <chr>, Face5Position <chr>, IntelligentExposure <int>,
+#> #   FacesRecognized <int>, RecognizedFace1Name <chr>,
+#> #   RecognizedFace1Position <chr>, RecognizedFace1Age <chr>,
+#> #   RecognizedFace2Name <chr>, RecognizedFace2Position <chr>,
+#> #   RecognizedFace2Age <chr>, RecognizedFace3Name <chr>,
+#> #   RecognizedFace3Position <chr>, RecognizedFace3Age <chr>,
+#> #   FlashWarning <int>, Title <chr>, BabyName <chr>, Location <chr>,
+#> #   IntelligentResolution <int>, BurstSpeed <int>, ClearRetouch <int>,
+#> #   SweepPanoramaDirection <int>, SweepPanoramaFieldOfView <int>,
+#> #   InternalNDFilter <dbl>, ClearRetouchValue <dbl>, OutputLUT <chr>,
+#> #   TimeLapseShotNumber <int>, MakerNoteVersion <chr>, SceneMode <int>,
+#> #   HighlightWarning <int>, …
 ```
 
 You'll notice there are a lot of columns! You can choose the exact tags you want to extract using the `tags` argument:
@@ -86,11 +88,10 @@ You'll notice there are a lot of columns! You can choose the exact tags you want
 ``` r
 read_exif(image_files, tags = c("filename", "imagesize"))
 #> # A tibble: 2 x 3
-#>                                                                    SourceFile
-#>                                                                         <chr>
-#> 1 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> 2 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> # ... with 2 more variables: FileName <chr>, ImageSize <chr>
+#>   SourceFile                                         FileName    ImageSize
+#>   <chr>                                              <chr>       <chr>    
+#> 1 /Library/Frameworks/R.framework/Versions/3.4/Reso… binary_tag… 30x25    
+#> 2 /Library/Frameworks/R.framework/Versions/3.4/Reso… Canon.jpg   8x8
 ```
 
 Details
@@ -102,30 +103,28 @@ In the background, `read_exif()` is calling `exiftool` on the console, and readi
 read_exif(image_files, tags = c("filename", "imagesize"), quiet = FALSE)
 #> Generating command line arguments...
 #> Running 1 commands
-#> exiftool -n -j -q -filename -imagesize '/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/Canon.jpg' '/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/img.JPG'
+#> exiftool -n -j -q -b -filename -imagesize '/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/binary_tag.JPG' '/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/Canon.jpg'
 #> # A tibble: 2 x 3
-#>                                                                    SourceFile
-#>                                                                         <chr>
-#> 1 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> 2 /Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images
-#> # ... with 2 more variables: FileName <chr>, ImageSize <chr>
+#>   SourceFile                                         FileName    ImageSize
+#>   <chr>                                              <chr>       <chr>    
+#> 1 /Library/Frameworks/R.framework/Versions/3.4/Reso… binary_tag… 30x25    
+#> 2 /Library/Frameworks/R.framework/Versions/3.4/Reso… Canon.jpg   8x8
 ```
 
 You can also roll-your-own `exiftool` call by using `exiftool_call()`. For the previous example, it would look something like this:
 
 ``` r
-exiftool_call(args = c("-n", "-j", "-q", "-filename", "-imagesize"),
-              fnames = image_files)
+exiftool_call(args = c("-n", "-j", "-q", "-filename", "-imagesize"), fnames = image_files)
 ```
 
-    #> exiftool -n -j -q -filename -imagesize '/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/Canon.jpg' '/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/img.JPG'
+    #> exiftool -n -j -q -filename -imagesize '/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/binary_tag.JPG' '/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/Canon.jpg'
     #> [{
-    #>   "SourceFile": "/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/Canon.jpg",
-    #>   "FileName": "Canon.jpg",
-    #>   "ImageSize": "8x8"
+    #>   "SourceFile": "/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/binary_tag.JPG",
+    #>   "FileName": "binary_tag.JPG",
+    #>   "ImageSize": "30x25"
     #> },
     #> {
-    #>   "SourceFile": "/Library/Frameworks/R.framework/Versions/3.3/Resources/library/exifr/images/img.JPG",
-    #>   "FileName": "img.JPG",
-    #>   "ImageSize": "30x25"
+    #>   "SourceFile": "/Library/Frameworks/R.framework/Versions/3.4/Resources/library/exifr/images/Canon.jpg",
+    #>   "FileName": "Canon.jpg",
+    #>   "ImageSize": "8x8"
     #> }]
