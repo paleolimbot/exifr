@@ -9,6 +9,7 @@
 #               2) http://www.graphcomp.com/info/specs/livepicture/fpx.pdf
 #               3) http://search.cpan.org/~jdb/libwin32/
 #               4) http://msdn.microsoft.com/en-us/library/aa380374.aspx
+#               5) http://www.cpan.org/modules/by-authors/id/H/HC/HCARVEY/File-MSWord-0.1.zip
 #------------------------------------------------------------------------------
 
 package Image::ExifTool::FlashPix;
@@ -19,7 +20,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::ASF;   # for GetGUID()
 
-$VERSION = '1.29';
+$VERSION = '1.33';
 
 sub ProcessFPX($$);
 sub ProcessFPXR($$$);
@@ -424,6 +425,21 @@ my %fpxFileType = (
             return undef if $len < 0 or length $val < $size + 8;
             return substr($val, 8 + $pos, $len);
         },
+    },
+    'WordDocument' => {
+        Name => 'WordDocument',
+        SubDirectory => { TagTable => 'Image::ExifTool::FlashPix::WordDocument' },
+    },
+    # save these tables until after the WordDocument was processed
+    '0Table' => {
+        Name => 'Table0',
+        Hidden => 1,
+        RawConv => '$$self{Table0} = $val; undef',
+    },
+    '1Table' => {
+        Name => 'Table1',
+        Hidden => 1,
+        RawConv => '$$self{Table1} = $val; undef',
     },
     Preview => {
         Name => 'PreviewImage',
@@ -1031,6 +1047,141 @@ my %fpxFileType = (
     },
 );
 
+# decode Word document header (ref [MS-DOC].pdf)
+%Image::ExifTool::FlashPix::WordDocument = (
+    PROCESS_PROC => \&Image::ExifTool::ProcessBinaryData,
+    GROUPS => { 2 => 'Other' },
+    FORMAT => 'int16u',
+    NOTES => 'Tags extracted from the Microsoft Word document stream.',
+    0 => {
+        Name => 'Identification',
+        PrintHex => 1,
+        PrintConv => {
+            0x6a62 => 'MS Word 97',
+            0x626a => 'Word 98 Mac',
+            0xa5dc => 'Word 6.0/7.0',
+            0xa5ec => 'Word 8.0',
+        },
+    },
+    3 => {
+        Name => 'LanguageCode',
+        PrintHex => 1,
+        PrintConv => {
+            0x0400 => 'None',
+            0x0401 => 'Arabic',
+            0x0402 => 'Bulgarian',
+            0x0403 => 'Catalan',
+            0x0404 => 'Traditional Chinese',
+            0x0804 => 'Simplified Chinese',
+            0x0405 => 'Czech',
+            0x0406 => 'Danish',
+            0x0407 => 'German',
+            0x0807 => 'German (Swiss)',
+            0x0408 => 'Greek',
+            0x0409 => 'English (US)',
+            0x0809 => 'English (British)',		
+            0x0c09 => 'English (Australian)',
+            0x040a => 'Spanish (Castilian)',
+            0x080a => 'Spanish (Mexican)',
+            0x040b => 'Finnish',
+            0x040c => 'French',
+            0x080c => 'French (Belgian)',
+            0x0c0c => 'French (Canadian)',
+            0x100c => 'French (Swiss)',
+            0x040d => 'Hebrew',
+            0x040e => 'Hungarian',
+            0x040f => 'Icelandic',
+            0x0410 => 'Italian',
+            0x0810 => 'Italian (Swiss)',
+            0x0411 => 'Japanese',
+            0x0412 => 'Korean',
+            0x0413 => 'Dutch',
+            0x0813 => 'Dutch (Belgian)',
+            0x0414 => 'Norwegian (Bokmal)',
+            0x0814 => 'Norwegian (Nynorsk)',
+            0x0415 => 'Polish',
+            0x0416 => 'Portuguese (Brazilian)',
+            0x0816 => 'Portuguese',
+            0x0417 => 'Rhaeto-Romanic',	
+            0x0418 => 'Romanian',
+            0x0419 => 'Russian',
+            0x041a => 'Croato-Serbian (Latin)',
+            0x081a => 'Serbo-Croatian (Cyrillic)',
+            0x041b => 'Slovak',
+            0x041c => 'Albanian',
+            0x041d => 'Swedish',
+            0x041e => 'Thai',
+            0x041f => 'Turkish',
+            0x0420 => 'Urdu',
+            0x0421 => 'Bahasa',
+            0x0422 => 'Ukrainian',
+            0x0423 => 'Byelorussian',
+            0x0424 => 'Slovenian',
+            0x0425 => 'Estonian',
+            0x0426 => 'Latvian',
+            0x0427 => 'Lithuanian',
+            0x0429 => 'Farsi',
+            0x042d => 'Basque',
+            0x042f => 'Macedonian',
+            0x0436 => 'Afrikaans',
+            0x043e => 'Malaysian',
+        },
+    },
+    5 => {
+        Name => 'DocFlags',
+        Mask => 0xff0f, # ignore save count
+        RawConv => '$$self{DocFlags} = $val',
+        PrintConv => { BITMASK => {
+            0 => 'Template',
+            1 => 'AutoText only',
+            2 => 'Complex',
+            3 => 'Has picture',
+            # 4-7 = number of incremental saves
+            8 => 'Encrypted',
+            9 => '1Table',
+            10 => 'Read only',
+            11 => 'Passworded',
+            12 => 'ExtChar',
+            13 => 'Load override',
+            14 => 'Far east',
+            15 => 'Obfuscated',
+        }},
+    },
+    9.1 => {
+        Name => 'System',
+        Mask => 0x0001,
+        PrintConv => {
+            0x0000 => 'Windows',
+            0x0001 => 'Macintosh',
+        },
+    },
+    9.2 => {
+        Name => 'Word97',
+        Mask => 0x0010,
+        PrintConv => {
+            0x0000 => 'No',
+            0x0010 => 'Yes',
+        },
+    },
+    (0x2d2 / 2) => { #5
+        Name => 'LastSavedByInfo',
+        Format => 'int32u[2]', # offset and size of last-saved-by block
+        Hidden => 1,
+        RawConv => '$$self{LastSavedByInfo} = $val; undef',
+    },
+);
+
+# tags decoded from Word document table
+%Image::ExifTool::FlashPix::DocTable = (
+    GROUPS => { 2 => 'Document' },
+    NOTES => 'Tags extracted from the Microsoft Word document table.',
+    VARS => { NO_ID => 1 },
+    LastSavedBy => {
+        Groups => { 2 => 'Author' },
+        Notes => 'enable Duplicates option to extract history of up to 10 entries',
+    },
+);
+
 # FujiFilm "Property" information (ref PH)
 %Image::ExifTool::FlashPix::PreviewInfo = (
     PROCESS_PROC => \&Image::ExifTool::ProcessBinaryData,
@@ -1264,6 +1415,38 @@ sub ProcessContents($$$)
 }
 
 #------------------------------------------------------------------------------
+# Extract last-saved-by names (ref 5)
+# Inputs: 0) ExifTool object ref, 1) dirInfo ref, 2) tag table ref
+# Returns: 1 on success
+sub ProcessLastSavedBy($$$)
+{
+    my ($et, $dirInfo, $tagTablePtr) = @_;
+    my $dataPt = $$dirInfo{DataPt};
+    my $pos = $$dirInfo{DirStart};
+    my $end = $$dirInfo{DirLen} + $pos;
+    return 0 if $pos + 6 > $end;
+	my $num = Get16u($dataPt, $pos+2);
+	$pos += 6;
+	while ($num >= 2) {
+	    last if $pos + 2 > $end;
+		my $len = Get16u($dataPt, $pos);
+		$pos += 2;
+	    last if $pos + $len * 2 > $end;
+		my $author = $et->Decode(substr($$dataPt, $pos, $len*2), 'UCS2');
+		$pos += $len * 2;
+	    last if $pos + 2 > $end;
+		$len = Get16u($dataPt, $pos);
+		$pos += 2;
+	    last if $pos + $len * 2 > $end;
+		my $path = $et->Decode(substr($$dataPt, $pos, $len*2), 'UCS2');
+		$pos += $len * 2;
+		$et->HandleTag($tagTablePtr, LastSavedBy => "$author ($path)");
+		$num -= 2;
+	}
+    return 1;
+}
+
+#------------------------------------------------------------------------------
 # Check FPX byte order mark (BOM) and set byte order appropriately
 # Inputs: 0) data ref, 1) offset to BOM
 # Returns: true on success
@@ -1482,7 +1665,7 @@ sub ProcessFPXR($$$)
             my $name = Image::ExifTool::Decode(undef, $1, 'UCS2', 'II', 'Latin');
             if ($verbose) {
                 my $psize = ($size == 0xffffffff) ? 'storage' : "$size bytes";
-                $et->VPrint(0,"  |  $entry) Name: '$name' [$psize]\n");
+                $et->VPrint(0,"  |  $entry) Name: '${name}' [$psize]\n");
             }
             # remove directory specification
             $name =~ s{.*/}{}s;
@@ -1637,7 +1820,7 @@ sub ProcessFPX($$)
 {
     my ($et, $dirInfo) = @_;
     my $raf = $$dirInfo{RAF};
-    my ($buff, $out, %dumpParms, $oldIndent, $miniStreamBuff);
+    my ($buff, $out, $oldIndent, $miniStreamBuff);
     my ($tag, %hier, %objIndex, %loadedDifSect);
 
     # read header
@@ -1667,8 +1850,6 @@ sub ProcessFPX($$)
 
     if ($verbose) {
         $out = $et->Options('TextOut');
-        $dumpParms{Out} = $out;
-        $dumpParms{MaxLen} = 96 if $verbose == 3;
         print $out "  Sector size=$sectSize\n  FAT: Count=$fatCount\n";
         print $out "  DIR: Start=$dirStart\n";
         print $out "  MiniFAT: Mini-sector size=$miniSize Start=$miniStart Count=$miniCount Cutoff=$miniCutoff\n";
@@ -1736,11 +1917,11 @@ sub ProcessFPX($$)
     }
     if ($verbose) {
         print $out "  FAT [",length($fat)," bytes]:\n";
-        HexDump(\$fat, undef, %dumpParms) if $verbose > 2;
+        $et->VerboseDump(\$fat);
         print $out "  Mini-FAT [",length($miniFat)," bytes]:\n";
-        HexDump(\$miniFat, undef, %dumpParms) if $verbose > 2;
+        $et->VerboseDump(\$miniFat);
         print $out "  Directory [",length($dir)," bytes]:\n";
-        HexDump(\$dir, undef, %dumpParms) if $verbose > 2;
+        $et->VerboseDump(\$dir);
     }
 #
 # process the directory
@@ -1919,6 +2100,22 @@ sub ProcessFPX($$)
             }
         }
     }
+    # process Word document table
+    if (defined $$et{DocFlags} and defined $$et{LastSavedByInfo}) {
+        my $buff = $$et{DocFlags} & 0x200 ? $$et{Table1} : $$et{Table0};
+        if ($buff) {
+            my $tbl = GetTagTable('Image::ExifTool::FlashPix::DocTable');
+            my ($pos, $len) = split ' ', $$et{LastSavedByInfo};
+            if ($pos + $len < length $buff) {
+                my %dirInfo = (
+                    DataPt   => \$buff,
+                    DirStart => $pos,
+                    DirLen   => $len,
+                );
+                ProcessLastSavedBy($et, \%dirInfo, $tbl);
+            }
+        }
+    }
     return 1;
 }
 
@@ -1942,7 +2139,7 @@ JPEG images.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -19,7 +19,7 @@ use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 
-$VERSION = '1.32';
+$VERSION = '1.33';
 
 sub ProcessRicohText($$$);
 sub ProcessRicohRMETA($$$);
@@ -1033,11 +1033,7 @@ sub ProcessRicohRMETA($$$)
         my $dat = substr($$dataPt, $pos, $size);
         if ($verbose) {
             $et->VPrint(2, "$$et{INDENT}RMETA section type=$type size=$size\n");
-            if ($verbose > 2) {
-                my %dumpParms = ( Addr => $$dirInfo{DataPos} + $pos, Prefix => $$et{INDENT} );
-                $dumpParms{MaxLen} = 96 if $verbose == 3;
-                Image::ExifTool::HexDump(\$dat, undef, %dumpParms);
-            }
+            $et->VerboseDump(\$dat, Addr => $$dirInfo{DataPos} + $pos);
         }
         if ($type == 1) {                       # section 1: tag names
             # save the tag names
@@ -1125,7 +1121,7 @@ interpret Ricoh maker notes EXIF meta information.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

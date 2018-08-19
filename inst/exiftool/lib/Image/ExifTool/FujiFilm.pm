@@ -29,7 +29,7 @@ use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 
-$VERSION = '1.59';
+$VERSION = '1.62';
 
 sub ProcessFujiDir($$$);
 sub ProcessFaceRec($$$);
@@ -44,6 +44,8 @@ my %testedRAF = (
     '0106' => 'S5Pro Ver1.06',
     '0111' => 'S5Pro Ver1.11',
     '0114' => 'S9600 Ver1.00',
+    '0132' => 'X-T2 Ver1.32',
+    '0144' => 'X100T Ver1.44',
     '0159' => 'S2Pro Ver1.00',
     '0200' => 'X10 Ver2.00',
     '0212' => 'S3Pro Ver2.12',
@@ -54,8 +56,11 @@ my %testedRAF = (
     '0269' => 'S9500 Ver1.02',
     '0271' => 'S3Pro Ver2.71', # UV/IR model?
     '0300' => 'X-E2',
+   # 0400  - expect to see this for X-T1
+    '0540' => 'X-T1 Ver5.40',
     '0712' => 'S5000 Ver3.00',
     '0716' => 'S5000 Ver3.00', # (yes, 2 RAF versions with the same Software version)
+    '0Dgi' => 'X-A10 Ver1.01 and X-A3 Ver1.02', # (yes, non-digits in the firmware number)
 );
 
 my %faceCategories = (
@@ -392,6 +397,7 @@ my %faceCategories = (
         PrintConv => {
             0 => 'Mechanical',
             1 => 'Electronic',
+            3 => 'Electronic Front Curtain', #10
         },
     },
     0x1100 => {
@@ -1113,7 +1119,7 @@ sub WriteRAF($$)
     $raf->Read($hdr,0x94) == 0x94  or return 0;
     $hdr =~ /^FUJIFILM/            or return 0;
     my $ver = substr($hdr, 0x3c, 4);
-    $ver =~ /^\d{4}$/              or return 0;
+    $ver =~ /^\d{4}$/ or $testedRAF{$ver} or return 0;
 
     # get the position and size of embedded JPEG
     my ($jpos, $jlen) = unpack('x84NN', $hdr);
@@ -1288,7 +1294,7 @@ FujiFilm maker notes in EXIF information, and to read/write FujiFilm RAW
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

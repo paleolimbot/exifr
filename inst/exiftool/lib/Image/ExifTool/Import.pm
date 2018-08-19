@@ -12,7 +12,7 @@ require Exporter;
 
 use vars qw($VERSION @ISA @EXPORT_OK);
 
-$VERSION = '1.08';
+$VERSION = '1.09';
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(ReadCSV ReadJSON);
 
@@ -40,7 +40,7 @@ sub ReadCSV($$;$)
         $raf = new File::RandomAccess($file);
         $file = 'CSV file';
     } else {
-        open CSVFILE, $file or return "Error opening CSV file '$file'";
+        open CSVFILE, $file or return "Error opening CSV file '${file}'";
         binmode CSVFILE;
         $openedFile = 1;
         $raf = new File::RandomAccess(\*CSVFILE);
@@ -79,7 +79,8 @@ sub ReadCSV($$;$)
         if (@tags) {
             # save values for each tag
             for ($i=0; $i<@vals and $i<@tags; ++$i) {
-                next unless length $vals[$i];   # ignore empty entries
+                # ignore empty entries unless missingValue is empty too
+                next unless length $vals[$i] or defined $missingValue and $missingValue eq '';
                 # delete tag (set value to undef) if value is same as missing tag
                 $fileInfo{$tags[$i]} =
                     (defined $missingValue and $vals[$i] eq $missingValue) ? undef : $vals[$i];
@@ -95,7 +96,7 @@ sub ReadCSV($$;$)
                 # terminate at first blank tag name (eg. extra comma at end of line)
                 last unless length $_;
                 @tags or s/^\xef\xbb\xbf//; # remove UTF-8 BOM if it exists
-                /^[-\w]+(:[-\w+]+)?#?$/ or $err = "Invalid tag name '$_'", last;
+                /^[-\w]+(:[-\w+]+)?#?$/ or $err = "Invalid tag name '${_}'", last;
                 push(@tags, $_);
             }
             last if $err;
@@ -122,7 +123,8 @@ sub ToUTF8($)
 
 #------------------------------------------------------------------------------
 # Read JSON object from file
-# Inputs: 0) RAF reference or undef, 1) optional file buffer reference
+# Inputs: 0) RAF reference or undef, 1) optional scalar reference for data
+#            to read before reading from file (ie. the file read buffer)
 # Returns: JSON object (scalar, hash ref, or array ref), or undef on EOF or
 #          empty object or array (and sets $$buffPt to empty string on EOF)
 # Notes: position in buffer is significant
@@ -133,6 +135,7 @@ sub ReadJSONObject($;$)
     my ($pos, $readMore, $rtnVal, $tok, $key, $didBOM);
     if ($buffPt) {
         $pos = pos $$buffPt;
+        $pos = pos($$buffPt) = 0 unless defined $pos;
     } else {
         my $buff = '';
         $buffPt = \$buff;
@@ -143,6 +146,7 @@ Tok: for (;;) {
         #  put a test here to be safe because one user reported this problem)
         last unless defined $pos;
         if ($pos >= length $$buffPt or $readMore) {
+            last unless defined $raf;
             # read another 64kB and add to unparsed data
             my $offset = length($$buffPt) - $pos;
             if ($offset) {
@@ -250,7 +254,7 @@ sub ReadJSON($$;$$)
         $raf = new File::RandomAccess($file);
         $file = 'JSON file';
     } else {
-        open JSONFILE, $file or return "Error opening JSON file '$file'";
+        open JSONFILE, $file or return "Error opening JSON file '${file}'";
         binmode JSONFILE;
         $openedFile = 1;
         $raf = new File::RandomAccess(\*JSONFILE);
@@ -258,7 +262,7 @@ sub ReadJSON($$;$$)
     my $obj = ReadJSONObject($raf);
     close JSONFILE if $openedFile;
     unless (ref $obj eq 'ARRAY') {
-        ref $obj eq 'HASH' or return "Format error in JSON file '$file'";
+        ref $obj eq 'HASH' or return "Format error in JSON file '${file}'";
         $obj = [ $obj ];
     }
     my ($info, $found);
@@ -280,7 +284,7 @@ sub ReadJSON($$;$$)
         $$database{$$info{SourceFile}} = $info;
         $found = 1;
     }
-    return $found ? undef : "No valid JSON objects in '$file'";
+    return $found ? undef : "No valid JSON objects in '${file}'";
 }
 
 
@@ -341,7 +345,7 @@ stored as hash lookups of tag name/value for each SourceFile.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

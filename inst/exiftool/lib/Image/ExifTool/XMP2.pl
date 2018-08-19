@@ -72,7 +72,7 @@ my %sTimecode = (
         },
     },
     timeValue   => { },
-    value       => { Writable => 'integer' },
+    value       => { Writable => 'integer', Notes => 'only in XMP 2008 spec; an error?' },
 );
 
 # XMP Dynamic Media namespace properties (xmpDM)
@@ -359,12 +359,13 @@ my %sEntityWithRole = (
     Name        => { Writable => 'lang-alt' },
     Role        => { List => 'Bag' },
 );
-my %sFrameSize = (
-    STRUCT_NAME => 'FrameSize',
-    NAMESPACE   => 'Iptc4xmpExt',
-    WidthPixels  => { Writable => 'integer' },
-    HeightPixels => { Writable => 'integer' },
-);
+# (no longer used)
+#my %sFrameSize = (
+#    STRUCT_NAME => 'FrameSize',
+#    NAMESPACE   => 'Iptc4xmpExt',
+#    WidthPixels  => { Writable => 'integer' },
+#    HeightPixels => { Writable => 'integer' },
+#);
 my %sRating = (
     STRUCT_NAME => 'Rating',
     NAMESPACE   => 'Iptc4xmpExt',
@@ -457,7 +458,7 @@ my %sLinkedImage = (
             AOCurrentLicensorName       => { },
             AOCurrentLicensorId         => { },
             AOCreatorId                 => { List => 'Seq' },
-            AOCircaDateCreated          => { Groups => { 2 => 'Time' } },
+            AOCircaDateCreated          => { Groups => { 2 => 'Time' }, Protected => 1 },
             AOStylePeriod               => { List => 'Bag' },
             AOSourceInvURL              => { },
             AOContentDescription        => { Writable => 'lang-alt' },
@@ -669,12 +670,27 @@ my %sLinkedImage = (
     # new IPTC video metadata 1.1 properties
     # (ref https://www.iptc.org/std/videometadatahub/recommendation/IPTC-VideoMetadataHub-props-Rec_1.1.html)
     SnapshotLink => { Groups => { 2 => 'Image' }, List => 'Bag', Struct => \%sLinkedImage, Name => 'Snapshot' },
+    # new IPTC video metadata 1.2 properties
+    # (ref http://www.iptc.org/std/videometadatahub/recommendation/IPTC-VideoMetadataHub-props-Rec_1.2.html)
+    RecDevice => {
+        Struct => {
+            STRUCT_NAME => 'Device',
+            NAMESPACE   => 'Iptc4xmpExt',
+            Manufacturer        => { },
+            ModelName           => { },
+            SerialNumber        => { },
+            AttLensDescription  => { },
+            OwnersDeviceId      => { },
+        },
+    },
+    PlanningRef         => { List => 'Bag', Struct => \%sEntityWithRole },
+    audioBitsPerSample  => { Writable => 'integer' },
 );
 
 #------------------------------------------------------------------------------
 # PRISM
 #
-# NOTE: The "Avoid" flag is set for all PRISM tags
+# NOTE: The "Avoid" flag is set for all PRISM tags (via tag table AVOID flag)
 
 # my %obsolete = (
 #     Notes => 'obsolete in 2.0',
@@ -701,11 +717,12 @@ my %prismPublicationDate = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-prism', 2 => 'Document' },
     NAMESPACE => 'prism',
+    AVOID => 1,
     NOTES => q{
         Publishing Requirements for Industry Standard Metadata 3.0 namespace
         tags.  (see L<http://www.prismstandard.org/>)
     },
-    acedemicField   => { }, # (3.0)
+    academicField   => { }, # (3.0)
     aggregateIssueNumber => { Writable => 'integer' }, # (3.0)
     aggregationType => { List => 'Bag' },
     alternateTitle  => {
@@ -918,6 +935,7 @@ my %prismPublicationDate = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-prl', 2 => 'Document' },
     NAMESPACE => 'prl',
+    AVOID => 1,
     NOTES => q{
         PRISM Rights Language 2.1 namespace tags.  These tags have been deprecated
         since the release of the PRISM Usage Rights 3.0. (see
@@ -933,6 +951,7 @@ my %prismPublicationDate = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-pur', 2 => 'Document' },
     NAMESPACE => 'pur',
+    AVOID => 1,
     NOTES => q{
         PRISM Usage Rights 3.0 namespace tags.  (see
         L<http://www.prismstandard.org/>)
@@ -964,6 +983,7 @@ my %prismPublicationDate = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-pmi', 2 => 'Image' },
     NAMESPACE => 'pmi',
+    AVOID => 1,
     NOTES => q{
         PRISM Metadata for Images 3.0 namespace tags.  (see
         L<http://www.prismstandard.org/>)
@@ -1030,6 +1050,7 @@ my %prismPublicationDate = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-prm', 2 => 'Document' },
     NAMESPACE => 'prm',
+    AVOID => 1,
     NOTES => q{
         PRISM Recipe Metadata 3.0 namespace tags.  (see
         L<http://www.prismstandard.org/>)
@@ -1093,17 +1114,18 @@ my %prismPublicationDate = (
 %Image::ExifTool::XMP::PixelLive = (
     GROUPS => { 1 => 'XMP-PixelLive', 2 => 'Image' },
     NAMESPACE => 'PixelLive',
+    AVOID => 1,
     NOTES => q{
         PixelLive namespace tags.  These tags are not writable becase they are very
         uncommon and I haven't been able to locate a reference which gives the
         namespace URI.
     },
-    AUTHOR    => { Name => 'Author',   Avoid => 1, Groups => { 2 => 'Author' } },
-    COMMENTS  => { Name => 'Comments', Avoid => 1 },
-    COPYRIGHT => { Name => 'Copyright',Avoid => 1, Groups => { 2 => 'Author' } },
-    DATE      => { Name => 'Date',     Avoid => 1, Groups => { 2 => 'Time' } },
-    GENRE     => { Name => 'Genre',    Avoid => 1 },
-    TITLE     => { Name => 'Title',    Avoid => 1 },
+    AUTHOR    => { Name => 'Author',    Groups => { 2 => 'Author' } },
+    COMMENTS  => { Name => 'Comments' },
+    COPYRIGHT => { Name => 'Copyright', Groups => { 2 => 'Author' } },
+    DATE      => { Name => 'Date',      Groups => { 2 => 'Time' } },
+    GENRE     => { Name => 'Genre' },
+    TITLE     => { Name => 'Title' },
 );
 
 # Extensis Portfolio tags (extensis) (ref 11)
@@ -1185,6 +1207,7 @@ my %sSubVersion = (
     %xmpTableDefaults,
     GROUPS => { 0 => 'XMP', 1 => 'XMP-acdsee', 2 => 'Image' },
     NAMESPACE => 'acdsee',
+    AVOID => 1,
     NOTES => q{
         ACD Systems ACDSee namespace tags.
 
@@ -1194,15 +1217,15 @@ my %sSubVersion = (
         mumble to themselves instead of speaking out for the rest of the world to
         hear.)
     },
-    author     => { Avoid => 1, Groups => { 2 => 'Author' } },
-    caption    => { Avoid => 1 },
-    categories => { Avoid => 1 },
-    collections=> { Avoid => 1 },
-    datetime   => { Name => 'DateTime', Avoid => 1, Groups => { 2 => 'Time' }, %dateTimeInfo },
-    keywords   => { Avoid => 1, List => 'Bag' },
-    notes      => { Avoid => 1 },
-    rating     => { Avoid => 1, Writable => 'real' }, # integer?
-    tagged     => { Avoid => 1, Writable => 'boolean' },
+    author     => { Groups => { 2 => 'Author' } },
+    caption    => { },
+    categories => { },
+    collections=> { },
+    datetime   => { Name => 'DateTime', Groups => { 2 => 'Time' }, %dateTimeInfo },
+    keywords   => { List => 'Bag' },
+    notes      => { },
+    rating     => { Writable => 'real' }, # integer?
+    tagged     => { Writable => 'boolean' },
     rawrppused => { Writable => 'boolean' },
     rpp => {
         Name => 'RPP',
@@ -1217,13 +1240,13 @@ my %sSubVersion = (
         Binary => 1,
     },
     # more tags (ref forum6840)
-    FixtureIdentifier   => { Avoid => 1 },
-    EditStatus          => { Avoid => 1 },
-    ReleaseDate         => { Avoid => 1 },
-    ReleaseTime         => { Avoid => 1 },
-    OriginatingProgram  => { Avoid => 1 },
-    ObjectCycle         => { Avoid => 1 },
-    Snapshots           => { Avoid => 1, List => 'Bag', Binary => 1 },
+    FixtureIdentifier   => { },
+    EditStatus          => { },
+    ReleaseDate         => { },
+    ReleaseTime         => { },
+    OriginatingProgram  => { },
+    ObjectCycle         => { },
+    Snapshots           => { List => 'Bag', Binary => 1 },
 );
 
 # Picture Licensing Universal System namespace properties (xmpPLUS)
@@ -1231,13 +1254,14 @@ my %sSubVersion = (
     %xmpTableDefaults,
     GROUPS => { 1 => 'XMP-xmpPLUS', 2 => 'Author' },
     NAMESPACE => 'xmpPLUS',
+    AVOID => 1,
     NOTES => q{
         XMP Picture Licensing Universal System (PLUS) tags as written by some older
         Adobe applications.  See L<PLUS XMP Tags|Image::ExifTool::TagNames/PLUS XMP Tags>
         for the current PLUS tags.
     },
-    CreditLineReq   => { Writable => 'boolean', Avoid => 1 },
-    ReuseAllowed    => { Writable => 'boolean', Avoid => 1 },
+    CreditLineReq   => { Writable => 'boolean' },
+    ReuseAllowed    => { Writable => 'boolean' },
 );
 
 # Creative Commons namespace properties (cc) (ref 5)
@@ -1354,14 +1378,15 @@ my %sSubVersion = (
     %xmpTableDefaults,
     GROUPS => { 1 => 'XMP-expressionmedia', 2 => 'Image' },
     NAMESPACE => 'expressionmedia',
+    AVOID => 1,
     NOTES => q{
         Microsoft Expression Media namespace tags.  These tags are avoided when
         writing due to name conflicts with tags in other schemas.
     },
-    Event       => { Avoid => 1 },
-    Status      => { Avoid => 1 },
-    People      => { Avoid => 1, List => 'Bag' },
-    CatalogSets => { Avoid => 1, List => 'Bag' },
+    Event       => { },
+    Status      => { },
+    People      => { List => 'Bag' },
+    CatalogSets => { List => 'Bag' },
 );
 
 # DigiKam namespace tags (ref PH)
@@ -1584,6 +1609,7 @@ my %sSubVersion = (
     %xmpTableDefaults,
     GROUPS => { 1 => 'XMP-GSpherical', 2 => 'Image' },
     NAMESPACE => 'GSpherical',
+    AVOID => 1,
     NOTES => q{
         Not actually XMP.  These RDF/XML tags are used in Google spherical MP4
         videos.  See
@@ -1591,32 +1617,86 @@ my %sSubVersion = (
         for the specification.
     },
     # (avoid due to conflicts with XMP-GPano tags)
-    Spherical                   => { Avoid => 1, Writable => 'boolean' },
-    Stitched                    => { Avoid => 1, Writable => 'boolean' },
-    StitchingSoftware           => { Avoid => 1 },
-    ProjectionType              => { Avoid => 1 },
-    StereoMode                  => { Avoid => 1 },
-    SourceCount                 => { Avoid => 1, Writable => 'integer' },
-    InitialViewHeadingDegrees   => { Avoid => 1, Writable => 'real' },
-    InitialViewPitchDegrees     => { Avoid => 1, Writable => 'real' },
-    InitialViewRollDegrees      => { Avoid => 1, Writable => 'real' },
+    Spherical                   => { Writable => 'boolean' },
+    Stitched                    => { Writable => 'boolean' },
+    StitchingSoftware           => { },
+    ProjectionType              => { },
+    StereoMode                  => { },
+    SourceCount                 => { Writable => 'integer' },
+    InitialViewHeadingDegrees   => { Writable => 'real' },
+    InitialViewPitchDegrees     => { Writable => 'real' },
+    InitialViewRollDegrees      => { Writable => 'real' },
     Timestamp                   => {
         Name => 'TimeStamp',
         Groups => { 2 => 'Time' },
-        Avoid => 1,
-        Writable => 'date',
+        Writable => 'integer',
         Shift => 'Time',
         ValueConv => 'ConvertUnixTime($val)', #(NC)
         ValueConvInv => 'GetUnixTime($val)',
         PrintConv => '$self->ConvertDateTime($val)',
         PrintConvInv => '$self->InverseDateTime($val)',
     },
-    FullPanoWidthPixels         => { Avoid => 1, Writable => 'integer' },
-    FullPanoHeightPixels        => { Avoid => 1, Writable => 'integer' },
-    CroppedAreaImageWidthPixels => { Avoid => 1, Writable => 'integer' },
-    CroppedAreaImageHeightPixels=> { Avoid => 1, Writable => 'integer' },
-    CroppedAreaLeftPixels       => { Avoid => 1, Writable => 'integer' },
-    CroppedAreaTopPixels        => { Avoid => 1, Writable => 'integer' },
+    FullPanoWidthPixels         => { Writable => 'integer' },
+    FullPanoHeightPixels        => { Writable => 'integer' },
+    CroppedAreaImageWidthPixels => { Writable => 'integer' },
+    CroppedAreaImageHeightPixels=> { Writable => 'integer' },
+    CroppedAreaLeftPixels       => { Writable => 'integer' },
+    CroppedAreaTopPixels        => { Writable => 'integer' },
+);
+
+# Google depthmap information (ref https://developers.google.com/depthmap-metadata/reference)
+%Image::ExifTool::XMP::GDepth = (
+    GROUPS      => { 0 => 'XMP', 1 => 'XMP-GDepth', 2 => 'Image' },
+    NAMESPACE   => { 'GDepth' => 'http://ns.google.com/photos/1.0/depthmap/' },
+    AVOID       => 1, # (too potential tag name conflicts)
+    NOTES       => q{
+        Google depthmap information. See
+        L<https://developers.google.com/depthmap-metadata/> for the specification.
+    },
+    WRITABLE    => 'string', # (default to string-type tags)
+    PRIORITY    => 0,
+    Format => {
+        PrintConv => {
+            RangeInverse => 'RangeInverse',
+            RangeLinear  => 'RangeLinear',
+        },
+    },
+    Near        => { Writable => 'real' },
+    Far         => { Writable => 'real' },
+    Mime        => { },
+    Data => {
+        ValueConv => 'Image::ExifTool::XMP::DecodeBase64($val)',
+        ValueConvInv => 'Image::ExifTool::XMP::EncodeBase64($val)',
+    },
+    Units       => { },
+    MeasureType => {
+        PrintConv => {
+            OpticalAxis => 'OpticalAxis',
+            OpticalRay  => 'OpticalRay',
+        },
+    },
+    ConfidenceMime  => { },
+    Confidence => {
+        ValueConv => 'Image::ExifTool::XMP::DecodeBase64($val)',
+        ValueConvInv => 'Image::ExifTool::XMP::EncodeBase64($val)',
+    },
+    Manufacturer=> { },
+    Model       => { },
+    Software    => { },
+    ImageWidth  => { Writable => 'real' },
+    ImageHeight => { Writable => 'real' },
+);
+
+# Google focus namespace
+%Image::ExifTool::XMP::GFocus = (
+    %xmpTableDefaults,
+    GROUPS => { 1 => 'XMP-GFocus', 2 => 'Image' },
+    NAMESPACE => 'GFocus',
+    NOTES => 'Focus information found in Google depthmap images.',
+    BlurAtInfinity  => { Writable => 'real' },
+    FocalDistance   => { Writable => 'real' },
+    FocalPointX     => { Writable => 'real' },
+    FocalPointY     => { Writable => 'real' },
 );
 
 # Getty Images namespace (ref PH)
@@ -1684,21 +1764,6 @@ my %sSubVersion = (
     NAMESPACE => undef, # variable namespace
 );
 
-# set "Avoid" flag for all PRISM tags
-my ($table, $key);
-foreach $table (
-    \%Image::ExifTool::XMP::prism,
-    \%Image::ExifTool::XMP::prl,
-    \%Image::ExifTool::XMP::pur,
-    \%Image::ExifTool::XMP::pmi,
-    \%Image::ExifTool::XMP::prm)
-{
-    foreach $key (TagTableKeys($table)) {
-        $$table{$key}{Avoid} = 1;
-    }
-}
-
-
 1;  #end
 
 __END__
@@ -1717,7 +1782,7 @@ This file contains definitions for less common XMP namespaces.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

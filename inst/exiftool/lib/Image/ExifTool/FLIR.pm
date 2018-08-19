@@ -24,7 +24,7 @@ use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 
-$VERSION = '1.15';
+$VERSION = '1.16';
 
 sub ProcessFLIR($$;$);
 sub ProcessFLIRText($$$);
@@ -97,7 +97,7 @@ my %float8g = ( Format => 'float', PrintConv => 'sprintf("%.8g",$val)' );
     PROCESS_PROC => \&ProcessFLIR,
     VARS => { ALPHA_FIRST => 1 },
     NOTES => q{
-        Information extracted from FLIR FFF images and the FLIR APP1 segment of JPEG
+        Information extracted from FLIR FFF images and the APP1 FLIR segment of JPEG
         images.  These tags may also be extracted from the first frame of an FLIR
         SEQ file.
     },
@@ -461,6 +461,7 @@ my %float8g = ( Format => 'float', PrintConv => 'sprintf("%.8g",$val)' );
     0x390 => { Name => 'FocusStepCount', Format => 'int16u' },
     0x45c => { Name => 'FocusDistance',  Format => 'float', PrintConv => 'sprintf("%.1f m",$val)' },
     # 0x43c - string: either "Live" or the file name
+    0x464 => { Name => 'FrameRate',  Format => 'int16u' }, #SebastianHani
 );
 
 # FLIR measurement tools record (ref 6)
@@ -1310,10 +1311,7 @@ sub ProcessMeasInfo($$$)
         last if $recLen < 0x28 or $pos + $recLen > $dirEnd;
         my $pre = 'Meas' . $i;
         $et->VerboseDir("MeasInfo $i", undef, $recLen);
-        if ($verbose > 2) {
-            HexDump($dataPt, $recLen,
-                Start=>$pos, Prefix=>$$et{INDENT}, DataPos=>$dataPos);
-        }
+        $et->VerboseDump($dataPt, Len => $recLen, Start=>$pos, DataPos=>$dataPos);
         my $coordLen = Get16u($dataPt, $pos+4);
         # generate tag table entries for this tool if necessary
         foreach $t ('Type', 'Params', 'Label') {
@@ -1447,9 +1445,7 @@ sub ProcessFLIR($$;$)
                 Size    => $recLen,
             );
         } elsif ($verbose > 2) {
-            my %parms = ( DataPos => $recPos, Prefix => $$et{INDENT} );
-            $parms{MaxLen} = 96 if $verbose < 4;
-            HexDump(\$rec, $recLen, %parms);
+            $et->VerboseDump(\$rec, Len => $recLen, DataPos => $recPos);
         }
     }
     delete $$et{SET_GROUP0};
@@ -1498,7 +1494,7 @@ Systems Inc. thermal image files (FFF, FPF and JPEG format).
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

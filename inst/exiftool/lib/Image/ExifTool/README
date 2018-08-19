@@ -14,13 +14,13 @@ the binary data block (floating point IDs allow multiple tags for the same
 offset, with the integer part being used for the offset).  The corresponding
 hash value provides information about the tag (explained later).
 
-Twenty-five special keys (TABLE_NAME, SHORT_NAME, PROCESS_PROC, WRITE_PROC,
+Twenty-six special keys (TABLE_NAME, SHORT_NAME, PROCESS_PROC, WRITE_PROC,
 CHECK_PROC, GROUPS, FORMAT, FIRST_ENTRY, TAG_PREFIX, PRINT_CONV, WRITABLE,
 TABLE_DESC, NOTES, IS_OFFSET, IS_SUBDIR, EXTRACT_UNKNOWN, NAMESPACE, PREFERRED,
-SRC_TABLE, PRIORITY, WRITE_GROUP, LANG_INFO, VARS, DATAMEMBER and SET_GROUP1)
-are used to provide additional information about a table.  The special keys have
-names that are all capitalized to avoid possible conflicts with tag keys.  Below
-is an explanation of the meaning of each special key:
+SRC_TABLE, PRIORITY, AVOID, WRITE_GROUP, LANG_INFO, VARS, DATAMEMBER and
+SET_GROUP1) are used to provide additional information about a table.  The
+special keys have names that are all capitalized to avoid possible conflicts
+with tag keys.  Below is an explanation of the meaning of each special key:
 
   TABLE_NAME : Name of this table (set automatically by GetTagTable()).
 
@@ -95,7 +95,7 @@ is an explanation of the meaning of each special key:
     extended    - 80-bit extended floating float
     ifd         - Unsigned 32-bit integer sub-IFD pointer (EXIF 'IFD')
     ifd64       - Unsigned 64-bit integer sub-IFD pointer (BigTIFF 'IFD8')
-    string      - Series of 8-bit ASCII characters        (EXIF 'ASCII')
+    string      - Series of 8-bit characters              (EXIF 'ASCII')
     undef       - Undefined-format binary data            (EXIF 'UNDEFINED')
     binary      - Binary data (same as 'undef')
 
@@ -124,7 +124,7 @@ is an explanation of the meaning of each special key:
     real        - floating point value as a string
     string      - unformatted string
     struct      - structure
-    
+
   FIRST_ENTRY : Specifies the index for the first tag entry in a binary table.
   This value is only used if the Unknown option is set to 2 or higher, and
   allows the binary data to be scanned for unknown tag entries.
@@ -177,6 +177,8 @@ is an explanation of the meaning of each special key:
 
   PRIORITY : Default Priority for all tags in this table.
 
+  AVOID : Flag set to Avoid writing all tags in this table.
+
   WRITE_GROUP : Default WriteGroup for all tags in the table.
 
   LANG_INFO : Code reference to a routine which returns a reference to a
@@ -223,6 +225,9 @@ is an explanation of the meaning of each special key:
     ENTRY_SIZE    Used by ProcessPhaseOne to specify size of IFD entry
 
     MAP_FORMAT    Lookup to map unknown format numbers (eg. Panasonic CameraIFD)
+
+    START_INDEX   [QuickTime tables only] Initial index for indices shown in
+                  Verbose output.  Indices are not show otherwise.
 
   DATAMEMBER : BinaryData tables only.  A reference to a list of sorted tag ID's
   which must be extracted as data members when writing.  Must also list "var_"
@@ -342,10 +347,11 @@ numerical.
                   'DataTag' - associated tag name containing data for offset or
                   byte count tags.
 
-                  'Drop' - set to 1 for tags that should be excluded when
-                  rebuilding maker notes when copying all tags.  Set to a number
-                  larger than 1 to drop only if data is larger than this size.
-                  Works for SubDirectory tags too.
+                  'Drop' - [IFD-format and PhaseOne makernote tags only] set to
+                  1 for tags that should be excluded when rebuilding maker notes
+                  when copying all tags.  Set to a number larger than 1 to drop
+                  only if data is larger than this size. Works for SubDirectory
+                  tags too.
 
                   'EntryBased' - set to 1 if the offset for this value is based
                   on the IFD entry position.  This allows individual values to
@@ -395,7 +401,7 @@ numerical.
                   if the preview must be stored inside the maker notes.
 
                   'Mandatory' - set for mandatory tags.  Used only by TagInfoXML
-                  and documentation purposes.  Mandatory tags may be added
+                  and for documentation purposes.  Mandatory tags may be added
                   automatically by ExifTool.
 
                   'NestedHtmlDump' - flag set if value for this tag is also
@@ -478,7 +484,9 @@ numerical.
                   this, 'Main:' and 'Doc#:' prefixes are added to all Require'd
                   and Desire'd tag names which don't already start with 'Main:'
                   or 'Doc#:', and the Composite tag is built once for each of
-                  the main document and all sub-documents.
+                  the main document and all sub-documents.  May be a reference
+                  to a list of indices for Desire'd tags, one of which must
+                  exist to generate this tag for sub-documents.
 
                   'SubIFD' - used in writing to determine that the tag specifies
                   an offset to a sub-IFD.  When this flag is set, the Group1
@@ -492,12 +500,13 @@ numerical.
 
                   'WriteNothing' - flag indicating that nothing is actually
                   written when this tag is set.  It is a fake writable tag that
-                  isn't actually written (eg. Geotag).
+                  isn't actually written (eg. Geotag).  Used to avoid processing
+                  a file unnecessarily if nothing will actually be written.
 
                   'WritePseudo' - flag indicating that this is a writable pseudo
                   tag.  If set, this tag may be written without actually writing
                   to the file (eg. FileName, FileModifyDate).
- 
+
                   'WrongBase' - ['IsOffset' tags only] An expression using $self
                   that is evaluated to generate a base shift for 'IsOffset' tags
                   which use a different base than the rest of the tags.
@@ -553,7 +562,7 @@ numerical.
                   key.  The subroutine takes 2 arguments: the Raw value and a
                   reference to the current ExifTool object.  The advanced
                   formatting expression (if any) may be accessed via the
-                  ExifTool "FMT_EXPR" member variable. The expression or
+                  ExifTool "FMT_EXPR" member variable.  The expression or
                   subroutine is evaluated if and when the tag value is requested
                   (ie. only after all extraction is complete), so if necessary
                   at this time the values of all other tags are available via
@@ -571,7 +580,7 @@ numerical.
                   with Composite tags where the converted values of the source
                   tags are needed), set the Priority to 0 to avoid taking
                   priority over a valid tag.  If ValueConv is not specified, the
-                  Raw value is not converted. Composite tags which Require or
+                  Raw value is not converted.  Composite tags which Require or
                   Desire other tags may access the ValueConv, PrintConv and Raw
                   values of these tags through the elements of the @val, @prt
                   and @raw lists respectively (only if there was no RawConv or
@@ -635,6 +644,14 @@ numerical.
   DelValue      : Raw value to be used when deleting a permanent tag.  (Note all
                   MakerNotes tags are permanent.)  If not specified, an attempt
                   is made to convert an empty string for the raw value.
+
+  Validate      : Scalar expression used to validate the raw value of a tag when
+                  the Validate option is set.  The expression may access $val
+                  (the Raw tag value), $tag (the tag key) and $self (the current
+                  ExifTool object), and should return a warning if any problem
+                  is found, or false if OK.  The evaluation is performed in the
+                  Image::ExifTool::Validate package namespace, so functions of
+                  this package need not be prefixed by the package name.
 
   Relist        : [Only if ValueConv or PrintConv is a list ref] Reference to a
                   list of original value indices used to reorganize values. Each
@@ -738,7 +755,7 @@ numerical.
                   "ValueConv" and the Protected option has bit 0x02 set to allow
                   writing of Protected tags that aren't directly writable.  The
                   AddValue, DelValue, Shift and Replace options from the parent
-                  tag are also defined, but no other options are set by default. 
+                  tag are also defined, but no other options are set by default.
                   Previous new values of WriteAlso tags have already been
                   removed prior to the eval if the Replace option was used for
                   the parent tag.  If an empty warning is issued ("\n"), the
@@ -947,11 +964,11 @@ numerical.
                   is specified).
 
      Validate   : If given, specifies Perl expression which is used to validate
-                  the subdirectory data.  The following variables may be used in
-                  the expression: $val (value of the tag), $dirData (reference
-                  to directory data), $subdirStart (offset to subdirectory
-                  start) and $size (size of subdirectory).  Returns true if
-                  subirectory is valid.
+                  the subdirectory data (regardless of Validate option setting).
+                  The following variables may be used in the expression: $val
+                  (value of the tag), $dirData (reference to directory data),
+                  $subdirStart (offset to subdirectory start) and $size (size of
+                  subdirectory).  Returns true if subirectory is valid.
 
      ProcessProc: If given, specifies processing procedure used to decode this
                   subdirectory data.  This overrides the default procedure
@@ -1018,7 +1035,7 @@ The contained structure field information hashes are similar to tag information
 hashes, except that only the following elements are used:
 
   Raw/Value/PrintConv (and their inverses), TagID (optional), Groups, List,
-  Writable, Struct, Namespace, LangCode, PropertyPath.
+  Writable, Struct, Namespace, LangCode, PropertyPath, Notes.
 
 But note that for PropertyPath, only the element of the path corresponding to
 the specific field is stored (including any necessary list properties).  The

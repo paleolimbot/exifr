@@ -19,7 +19,7 @@ package Image::ExifTool::Shortcuts;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = '1.57';
+$VERSION = '1.60';
 
 # this is a special table used to define command-line shortcuts
 # (documentation Notes may be added for these via %shortcutNotes in BuildTagLookup.pm)
@@ -145,6 +145,7 @@ $VERSION = '1.57';
         'MakerNoteKodak9',
         'MakerNoteKodak10',
         'MakerNoteKodak11',
+        'MakerNoteKodak12',
         'MakerNoteKodakUnknown',
         'MakerNoteKyocera',
         'MakerNoteMinolta',
@@ -168,6 +169,7 @@ $VERSION = '1.57';
         'MakerNoteLeica9',
         'MakerNotePanasonic',
         'MakerNotePanasonic2',
+        'MakerNotePanasonic3',
         'MakerNotePentax',
         'MakerNotePentax2',
         'MakerNotePentax3',
@@ -176,6 +178,7 @@ $VERSION = '1.57';
         'MakerNotePentax6',
         'MakerNotePhaseOne',
         'MakerNoteReconyx',
+        'MakerNoteReconyx2',
         'MakerNoteRicoh',
         'MakerNoteRicoh2',
         'MakerNoteRicohText',
@@ -326,7 +329,7 @@ name prefix.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -58,7 +58,7 @@ use Image::ExifTool::Exif;
 use Image::ExifTool::GPS;
 use Image::ExifTool::HP;
 
-$VERSION = '3.19';
+$VERSION = '3.23';
 
 sub CryptShutterCount($$);
 sub PrintFilter($$$);
@@ -178,7 +178,8 @@ sub DecodeAFPoints($$$$;$);
     '4 2' => 'smc PENTAX-FA 80-320mm F4.5-5.6',
     '4 3' => 'smc PENTAX-FA 43mm F1.9 Limited',
     '4 6' => 'smc PENTAX-FA 35-80mm F4-5.6',
-    '4 10' => 'Irix 15mm F2.4', #forum3833
+    '4 9' => 'Irix 11mm F4 Firefly', #27
+    '4 10' => 'Irix 15mm F2.4', #27
     '4 12' => 'smc PENTAX-FA 50mm F1.4', #17
     '4 15' => 'smc PENTAX-FA 28-105mm F4-5.6 [IF]',
     '4 16' => 'Tamron AF 80-210mm F4-5.6 (178D)', #13
@@ -325,13 +326,14 @@ sub DecodeAFPoints($$$$;$);
     '8 30' => 'Sigma 17-70mm F2.8-4 DC Macro HSM | C', #27
     '8 31' => 'Sigma 18-35mm F1.8 DC HSM', #27
     '8 32' => 'Sigma 30mm F1.4 DC HSM | A', #27
-    '8 33' => 'Sigma 18-200mm F3.5-6.3 DC MACRO HSM', #DieterPearcey (C014)
+    '8 33' => 'Sigma 18-200mm F3.5-6.3 DC Macro HSM', #DieterPearcey (C014)
     '8 34' => 'Sigma 18-300mm F3.5-6.3 DC Macro HSM', #NJ
     '8 59' => 'HD PENTAX-D FA 150-450mm F4.5-5.6 ED DC AW', #29
     '8 60' => 'HD PENTAX-D FA* 70-200mm F2.8 ED DC AW', #29
     '8 61' => 'HD PENTAX-D FA 28-105mm F3.5-5.6 ED DC WR', #PH
     '8 62' => 'HD PENTAX-D FA 24-70mm F2.8 ED SDM WR', #PH
     '8 63' => 'HD PENTAX-D FA 15-30mm F2.8 ED SDM WR', #PH
+    '8 64' => 'HD PENTAX-D FA* 50mm F1.4 SDM AW', #27
     '8 197' => 'HD PENTAX-DA 55-300mm F4.5-6.3 ED PLM WR RE', #29
     '8 198' => 'smc PENTAX-DA L 18-50mm F4-5.6 DC WR RE', #29
     '8 199' => 'HD PENTAX-DA 18-50mm F4-5.6 DC WR RE', #29
@@ -533,6 +535,7 @@ my %pentaxModelID = (
     0x131f0 => 'WG-M2', # (Ricoh)
     0x13222 => 'K-70', #29 (Ricoh)
     0x1322c => 'KP', #29 (Ricoh)
+    0x13240 => 'K-1 Mark II', # (Ricoh)
 );
 
 # Pentax city codes - (PH, Optio WP)
@@ -945,6 +948,7 @@ my %binaryDataAttrs = (
             4 => 'RAW', #5
             5 => 'Premium', #PH (K20D)
             7 => 'RAW (pixel shift enabled)', #forum6536 (K-3 II)
+            8 => 'Dynamic Pixel Shift', #IB
             65535 => 'n/a', #PH (Q MOV video)
         },
     },
@@ -1925,13 +1929,16 @@ my %binaryDataAttrs = (
             1 => 'Remote Control (3 s delay)', #19
             2 => 'Remote Control', #19
             4 => 'Remote Continuous Shooting', # (K-5)
-            10 => 'Composite Average', #31
-            11 => 'Composite Additive', #31
-            12 => 'Composite Bright', #31
         },{
             0x00 => 'Single Exposure',
             0x01 => 'Multiple Exposure',
+            0x02 => 'Composite Average', #31
+            0x03 => 'Composite Additive', #31
+            0x04 => 'Composite Bright', #31
             0x08 => 'Interval Shooting', #31
+            0x0a => 'Interval Composite Average', #31
+            0x0b => 'Interval Composite Additive', #31
+            0x0c => 'Interval Composite Bright', #31
             0x0f => 'Interval Movie', #PH (K-01)
             0x10 => 'HDR', #PH (645D)
             0x20 => 'HDR Strong 1', #PH (NC) (K-5)
@@ -2583,7 +2590,7 @@ my %binaryDataAttrs = (
     },
     # 0x0202: int16u[4]: all 0's in all my samples
     0x0203 => { #JD (not really sure what these mean)
-        Name => 'ColorMatrixA',
+        Name => 'ColorMatrixA', # (camera RGB to sRGB matrix, *ist D, ref IB)
         Writable => 'int16s',
         Count => 9,
         ValueConv => 'join(" ",map({ $_/8192 } split(" ",$val)))',
@@ -2592,7 +2599,7 @@ my %binaryDataAttrs = (
         PrintConvInv => '"$val"',
     },
     0x0204 => { #JD
-        Name => 'ColorMatrixB',
+        Name => 'ColorMatrixB', # (camera RGB to Adobe RGB matrix, *ist D, ref IB)
         Writable => 'int16s',
         Count => 9,
         ValueConv => 'join(" ",map({ $_/8192 } split(" ",$val)))',
@@ -6244,7 +6251,7 @@ tags, and everyone who helped contribute to the LensType values.
 
 =head1 AUTHOR
 
-Copyright 2003-2017, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
