@@ -7,7 +7,7 @@ test_files <- list.files(images_folder, recursive=TRUE, full.names=TRUE)
 test_that("read_exif reads images in the inst directory", {
   df <- read_exif(test_files, quiet = FALSE)
   expect_equal(nrow(df), 2)
-  expect_equal(ncol(df), 267)
+  expect_true(ncol(df) > 250)
   expect_true("SourceFile" %in% colnames(df))
   expect_true(setequal(test_files, df$SourceFile))
 })

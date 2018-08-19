@@ -14,6 +14,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
                                install_url = NULL,
                                install_location = NULL,
                                quiet = FALSE) {
+
   # configure perl
   if(is.null(perl_path)) {
     perl_path <- configure_perl(quiet = quiet)
@@ -21,8 +22,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
 
   if(is.null(command)) {
     # use default list of possible locations
-    command <- c(getOption("exifr.exiftoolcommand"),
-                 "exiftool")
+    command <- c(getOption("exifr.exiftoolcommand"), "exiftool")
     # check if internal exiftool exists before testing the command
     internal_exiftool <- system.file("exiftool/exiftool.pl", package = "exifr")
     if(internal_exiftool != "") {
@@ -31,10 +31,11 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   } else if(length(command) == 0) {
     command <- character(0)
   } else {
+    # "" value for command hangs the system
+    command <- setdiff(command, "")
+
     # try both the command and perl 'command'
-    command <- c(command,
-                 paste(shQuote(perl_path),
-                       shQuote(command)))
+    command <- c(command, paste(shQuote(perl_path), shQuote(command)))
   }
 
   for(com in command) {
@@ -121,7 +122,8 @@ test_perl <- function(command, quiet = TRUE) {
 }
 
 test_exiftool <- function(command, quiet = TRUE) {
-  if(!quiet) message("Trying exiftool command: ", command)
+  if(!quiet) message("Trying exiftool command: `", command, "`")
+
   command_works <- suppressWarnings(suppressMessages(0==try(system(command, ignore.stdout = TRUE,
                    ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
   if(command_works) {
