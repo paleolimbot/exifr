@@ -21,7 +21,7 @@ test_that("exiftool install works properly", {
   expect_is(configure_exiftool(command = character(0), install_url = TRUE,
                                install_location = install_loc),
             "character")
-  expect_equal(exiftool_version(), 10.61)
+  expect_equal(exiftool_version(), 11.1)
   unlink(install_loc, recursive = TRUE)
   options(exifr.exiftoolcommand = old_exiftool)
 })
