@@ -2,9 +2,14 @@ Package: exifr
 Type: Package
 Title: EXIF Image Data in R
 Version: 0.2.2
-Authors@R: c(person("Dewey", "Dunnington", role = c("aut", "cre"),
-				email = "dewey@fishandwhistle.net"),
-			person("Phil", "Harvey", role = "aut"))
+Authors@R: c(
+    person("Dewey", "Dunnington",
+           email = "dewey@fishandwhistle.net", 
+           role = c("aut", "cre"), 
+           comment = c(ORCID = "0000-0002-9415-4582")
+    ),
+		person("Phil", "Harvey", role = "aut")
+	)
 Maintainer: Dewey Dunnington <dewey@fishandwhistle.net>
 Description: Reads EXIF data using ExifTool <http://www.sno.phy.queensu.ca/~phil/exiftool/>
     and returns results as a data frame.
@@ -18,7 +23,7 @@ Description: Reads EXIF data using ExifTool <http://www.sno.phy.queensu.ca/~phil
     Samsung, Sanyo, Sigma/Foveon and Sony.
 License: GPL-2
 LazyData: TRUE
-Imports: curl, purrr, dplyr, tibble, jsonlite, utils
+Imports: curl, purrr, dplyr, tibble, jsonlite, utils, rappdirs
 SystemRequirements: Perl
 URL: https://github.com/paleolimbot/exifr
 BugReports: https://github.com/paleolimbot/exifr/issues

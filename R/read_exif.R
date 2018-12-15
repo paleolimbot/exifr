@@ -156,7 +156,7 @@ read_exif_base <- function(command, quiet = TRUE) {
 #' exiftool_version()
 #'
 exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
-  command <- exiftool.command(args, fnames)
+  command <- exiftool_command(args, fnames)
   if(!quiet) message(command)
   system(command, intern=intern, ...)
 }
@@ -165,15 +165,4 @@ exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet
 #' @export
 exiftool_version <- function() {
   as.numeric(exiftool_call(args = "-ver", intern = TRUE, quiet = TRUE))
-}
-
-# private helper command to generate call to exiftool
-exiftool_command <- function(args, fnames) {
-  exiftoolpath <- getOption("exifr.exiftoolcommand")
-  if(is.null(exiftoolpath)) stop("ExifTool not properly installed")
-  if(length(fnames) > 0) {
-    paste(exiftoolpath, paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
-  } else {
-    paste(exiftoolpath, paste(args, collapse=" "))
-  }
 }

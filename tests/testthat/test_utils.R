@@ -21,7 +21,7 @@ test_that("exiftool install works properly", {
   expect_is(configure_exiftool(command = character(0), install_url = TRUE,
                                install_location = install_loc),
             "character")
-  expect_equal(exiftool_version(), 11.1)
+  expect_equal(exiftool_version(), 11.22)
   unlink(install_loc, recursive = TRUE)
   options(exifr.exiftoolcommand = old_exiftool)
 })
@@ -38,6 +38,6 @@ test_that("Internal version of exiftool works", {
 
 test_that("empty strings do not pass configure_exiftool()", {
   old_exiftool <- getOption("exifr.exiftoolcommand")
-  expect_error(configure_exiftool(command = ""), "Could not find ExifTool at any of the following commands")
+  expect_warning(configure_exiftool(command = ""), "Could not find ExifTool at any of the following commands")
   options(exifr.exiftoolcommand = old_exiftool)
 })

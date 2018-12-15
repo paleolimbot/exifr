@@ -3,12 +3,15 @@
 \name{configure_exiftool}
 \alias{configure_exiftool}
 \alias{configure_perl}
+\alias{configure_exiftool_reset}
 \title{Configure perl, ExifTool}
 \usage{
 configure_exiftool(command = NULL, perl_path = NULL, install_url = NULL,
   install_location = NULL, quiet = FALSE)
 
 configure_perl(perl_path = NULL, quiet = FALSE)
+
+configure_exiftool_reset()
 }
 \arguments{
 \item{command}{The exiftool command or location of exiftool.pl}

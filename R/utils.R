@@ -1,4 +1,21 @@
 
+# where the configuration is stored: a local environment
+exiftool_options <- new.env(parent = emptyenv())
+
+# private helper command to generate call to exiftool
+exiftool_command <- function(args, fnames) {
+  if(!("command" %in% names(exiftool_options))) {
+    stop("ExifTool not properly installed. Run configure_exiftool(quiet=FALSE) to debug.")
+  }
+
+  exiftoolpath <- exiftool_options$command
+  if(length(fnames) > 0) {
+    paste(exiftoolpath, paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
+  } else {
+    paste(exiftoolpath, paste(args, collapse=" "))
+  }
+}
+
 #' Configure perl, ExifTool
 #'
 #' @param command The exiftool command or location of exiftool.pl
@@ -23,6 +40,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   if(is.null(command)) {
     # use default list of possible locations
     command <- c(getOption("exifr.exiftoolcommand"), "exiftool")
+
     # check if internal exiftool exists before testing the command
     internal_exiftool <- system.file("exiftool/exiftool.pl", package = "exifr")
     if(internal_exiftool != "") {
@@ -46,14 +64,16 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
     if(test_exiftool(paste(com, "-ver"), quiet = quiet)) {
       if(!quiet) message("ExifTool found at ", com)
       options(exifr.exiftoolcommand = com)
+      exiftool_options$command <- com
       return(invisible(com))
     }
   }
 
   if(is.null(install_url)) {
     # don't install!
-    stop("Could not find ExifTool at any of the following commands: ",
-         paste(command, collapse = ", "))
+    warning("Could not find ExifTool at any of the following commands: ",
+         paste0("`", command, "`", collapse = ", "))
+    return(invisible(NULL))
   }
 
   if(identical(install_url, TRUE)) {
@@ -68,6 +88,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   if(is.null(install_location)) {
     # define default install locations
     install_location <- c(
+      file.path(rappdirs::user_data_dir(appname = "r-exifr", appauthor = "paleolimbot")),
       file.path(system.file("", package = "exifr")),
       path.expand("~/exiftool")
     )
@@ -95,11 +116,13 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
 configure_perl <- function(perl_path = NULL, quiet = FALSE) {
   if(is.null(perl_path)) {
     # use default list of possible locations
-    perl_path <- c(getOption("exifr.perlpath"),
-              "perl",
-              "C:\\Perl64\\bin\\perl",
-              "C:\\Perl\\bin\\perl",
-              "C:\\Strawberry\\perl\\bin\\perl")
+    perl_path <- c(
+      getOption("exifr.perlpath"),
+      "perl",
+      "C:\\Perl64\\bin\\perl",
+      "C:\\Perl\\bin\\perl",
+      "C:\\Strawberry\\perl\\bin\\perl"
+    )
   }
 
   for(p in perl_path) {
@@ -110,9 +133,18 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
     }
   }
 
-  stop("Could not find perl at any of the following locations: ",
+  warning("Could not find perl at any of the following locations: ",
        paste(perl_path, collapse = ", "),
        ". Specify perl location using options(exifr.perlpath='my/path/to/perl')")
+  invisible(NULL)
+}
+
+#' @rdname configure_exiftool
+#' @export
+configure_exiftool_reset <- function() {
+  rm("command", envir = exiftool_options)
+  options(exifr.perlpath = NULL)
+  options(exifr.exiftoolcommand = NULL)
 }
 
 test_perl <- function(command, quiet = TRUE) {
