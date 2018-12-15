@@ -122,7 +122,8 @@ read_exif <- function(path, tags = NULL, recursive = FALSE, args = NULL, quiet =
   # ---- run the commands, read output ----
 
   if(!quiet) message("Running ", length(commands), " commands")
-  purrr::map_df(commands, read_exif_base, quiet = quiet)
+  results <- lapply(commands, read_exif_base, quiet = quiet)
+  tibble::as_tibble(do.call(plyr::rbind.fill, results))
 }
 
 # base function to read a single command to a df
