@@ -5,8 +5,11 @@ library(curl)
 # update the packaged version of exiftool, so that a reasonably new version is available
 # in the installed package
 
+current_version <- curl_fetch_memory("http://owl.phy.queensu.ca/~phil/exiftool/ver.txt")$content %>%
+  rawToChar()
+
 curl_download(
-  "https://sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-11.22.tar.gz",
+  sprintf("https://sno.phy.queensu.ca/~phil/exiftool/Image-ExifTool-%s.tar.gz", current_version),
   "data-raw/exiftool-current.tar.gz"
 ) %>%
   untar(exdir = "data-raw")
