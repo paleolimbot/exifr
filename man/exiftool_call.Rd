@@ -3,12 +3,15 @@
 \name{exiftool_call}
 \alias{exiftool_call}
 \alias{exiftool_version}
+\alias{exiftool_command}
 \title{Call exiftool from R}
 \usage{
 exiftool_call(args = NULL, fnames = NULL, intern = FALSE, ...,
   quiet = FALSE)
 
 exiftool_version()
+
+exiftool_command(args = character(0), fnames = character(0))
 }
 \arguments{
 \item{args}{a list of non-shell quoted arguments (e.g. \code{-n -csv})}

@@ -33,7 +33,7 @@ exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet
   if(intern) {
     command_stdout(command, args, ...)
   } else {
-    system2(command, ...)
+    system2(command, args, ...)
   }
 }
 
@@ -43,8 +43,9 @@ exiftool_version <- function() {
   as.numeric(exiftool_call(args = "-ver", intern = TRUE, quiet = TRUE))
 }
 
-
-exiftool_command <- function(args, fnames) {
+#' @rdname exiftool_call
+#' @export
+exiftool_command <- function(args = character(0), fnames = character(0)) {
   # this is needed to estimate the command line length for large numbers of filenames
 
   if(!("command" %in% names(exiftool_options))) {
@@ -225,8 +226,8 @@ configure_exiftool_reset <- function() {
 }
 
 test_perl <- function(command, quiet = TRUE) {
-  if(!quiet) message("Trying perl command: ", command)
-  test_command(command, args = "-V", return_code = 0, regex_stdout = "configuration")
+  if(!quiet) message("Trying perl command: `", command, "`")
+  test_command(command, args = "--version", return_code = 0, regex_stdout = "[Pp]erl")
 }
 
 test_exiftool <- function(command, args = character(0), quiet = TRUE) {
