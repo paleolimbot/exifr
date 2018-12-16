@@ -6,5 +6,11 @@
 
 # .onAttach for library(exifr)
 .onAttach <- function(libname, pkgname) {
-  packageStartupMessage("Using ExifTool version ", exiftool_version())
+  version <- try(exiftool_version(), silent = TRUE)
+  if(!inherits(version, "try-error")) {
+    packageStartupMessage("Using ExifTool version ", version)
+  } else {
+    # there are already a bunch of warnings as a result of the failed
+    # configuration
+  }
 }

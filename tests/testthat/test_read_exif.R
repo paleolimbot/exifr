@@ -22,8 +22,10 @@ test_that("read_exif reads a single file as a data frame", {
 
 test_that("quiet argument supresses messages", {
   expect_silent(read_exif(test_files))
-  expect_message(read_exif(test_files, quiet = FALSE),
-                 "Generating command line arguments")
+  expect_message(
+    read_exif(test_files, quiet = FALSE),
+    "Generating command line arguments"
+  )
 })
 
 test_that("recursive option works", {
@@ -36,12 +38,14 @@ test_that("recursive option works", {
   df1 <- read_exif(images_folder, recursive = TRUE)
   df2 <- read_exif(list.files(images_folder, full.names = TRUE))
   expect_true(setequal(colnames(df1), colnames(df2)))
-  # identical_cols <- purrr::map2_lgl(df1, df2, identical)
+  # identical_cols <- mapply(df1, df2, identical)
   df1$FileAccessDate <- NULL
   df2$FileAccessDate <- NULL
   cols <- unique(c(colnames(df1), colnames(df2)))
-  expect_identical(df1[order(df1$SourceFile), cols],
-                   df2[order(df2$SourceFile), cols])
+  expect_identical(
+    df1[order(df1$SourceFile), cols],
+    df2[order(df2$SourceFile), cols]
+  )
 })
 
 test_that("tags option works", {
@@ -49,14 +53,15 @@ test_that("tags option works", {
   expect_equal(colnames(df), c("SourceFile", "FileName", "ImageSize"))
   df2 <- read_exif(test_files, tags = c("NotATag"), quiet = TRUE)
   expect_equal(colnames(df2), "SourceFile")
-  expect_identical(read_exif(test_files, tags = "file name"),
-                   read_exif(test_files, tags = "filename"))
+  expect_identical(
+    read_exif(test_files, tags = "file name"),
+    read_exif(test_files, tags = "filename")
+  )
 })
 
 test_that("command-line length is properly dealt with", {
   files <- rep(test_files, 500)
-  df <- read_exif(files, tags = c("FileName", "ImageSize"),
-                  args = "-fast", quiet = FALSE)
+  df <- read_exif(files, tags = c("FileName", "ImageSize"), args = "-fast", quiet = FALSE)
   expect_true(setequal(df$SourceFile, test_files))
   expect_equal(nrow(unique(df)), 2)
 })
@@ -91,7 +96,7 @@ test_that("exiftool call function works", {
   # check that call function output works
   expect_match(exiftool_call(args = c("-j", "-exiftoolversion"),
                              system.file("images/Canon.jpg", package = "exifr"),
-                             intern = TRUE)[3],
+                             intern = TRUE),
                '"ExifToolVersion": [0-9.]+')
   # test that quiet argument suppresses command output
   expect_message(exiftool_call(args = c("-j", "-exiftoolversion"),

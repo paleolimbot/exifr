@@ -1,20 +1,69 @@
 
-# where the configuration is stored: a local environment
-exiftool_options <- new.env(parent = emptyenv())
+#' Call exiftool from R
+#'
+#' Uses \code{system()} to run a basic call to \code{exiftool}.
 
-# private helper command to generate call to exiftool
-exiftool_command <- function(args, fnames) {
+#' @param args a list of non-shell quoted arguments (e.g. \code{-n -csv})
+#' @param fnames a list of filenames (\code{shQuote()} will be applied to this vector)
+#' @param intern \code{TRUE} if output should be returned as a character vector.
+#' @param quiet Suppress output of the command itself.
+#' @param ... additional arguments to be passed to \link{system2}
+#'
+#' @return The exit code if \code{intern=FALSE}, or the standard output as a character vector
+#'  if \code{intern=TRUE}.
+#' @export
+#'
+#' @examples
+#' exiftool_call()
+#' exiftool_version()
+#'
+exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
   if(!("command" %in% names(exiftool_options))) {
-    stop("ExifTool not properly configured. Run configure_exiftool(quiet=FALSE) to debug.")
+    stop("ExifTool not properly configured. Run configure_exiftool() to debug.")
   }
 
-  exiftoolpath <- exiftool_options$command
+  command <- exiftool_options$command
+  args <- c(exiftool_options$args, args)
+
   if(length(fnames) > 0) {
-    paste(exiftoolpath, paste(args, collapse=" "), paste(shQuote(fnames), collapse=" "))
+    args <- c(args, shQuote(fnames))
+  }
+
+  if(!quiet) message(paste(c(shQuote(command), args), collapse = " "))
+  if(intern) {
+    command_stdout(command, args, ...)
   } else {
-    paste(exiftoolpath, paste(args, collapse=" "))
+    system2(command, ...)
   }
 }
+
+#' @rdname exiftool_call
+#' @export
+exiftool_version <- function() {
+  as.numeric(exiftool_call(args = "-ver", intern = TRUE, quiet = TRUE))
+}
+
+
+exiftool_command <- function(args, fnames) {
+  # this is needed to estimate the command line length for large numbers of filenames
+
+  if(!("command" %in% names(exiftool_options))) {
+    stop("ExifTool not properly configured. Run configure_exiftool() to debug.")
+  }
+
+  command <- exiftool_options$command
+  args <- c(exiftool_options$args, args)
+
+  if(length(fnames) > 0) {
+    args <- c(args, shQuote(fnames))
+  }
+
+  paste(c(shQuote(command), args), collapse = " ")
+}
+
+
+# where the configuration is stored: a local environment
+exiftool_options <- new.env(parent = emptyenv())
 
 #' Configure perl, ExifTool
 #'
@@ -39,32 +88,46 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
 
   if(is.null(command)) {
     # use default list of possible locations
-    command <- c(getOption("exifr.exiftoolcommand"), "exiftool")
-
-    # check if internal exiftool exists before testing the command
-    internal_exiftool <- system.file("exiftool/exiftool.pl", package = "exifr")
-    if(internal_exiftool != "" && !is.null(perl_path)) {
-      command <- c(command, paste(shQuote(perl_path), shQuote(internal_exiftool)))
-    }
+    command <- c(
+      getOption("exifr.exiftoolcommand"),
+      system.file("exiftool/exiftool.pl", package = "exifr"),
+      "exiftool"
+    )
   } else if(length(command) == 0) {
     command <- character(0)
-  } else {
-    # "" value for command hangs the system
-    command <- setdiff(command, "")
-
-    # try both the command and perl 'command'
-    command <- c(command, paste(shQuote(perl_path), shQuote(command)))
   }
 
-  for(com in command) {
-    # automatically fail perl_path ''
-    if(com == paste(shQuote(perl_path), shQuote(NULL))) {
+  # try commands on their own, or with perl if it exists
+  for(com in setdiff(command, "")) {
+    # automatically fail ''
+    if(nchar(com) == 0) {
       next
     }
-    if(test_exiftool(paste(com, "-ver"), quiet = quiet)) {
-      if(!quiet) message("ExifTool found at ", com)
-      options(exifr.exiftoolcommand = com)
+
+    # requires perl
+    if(endsWith(com, ".pl")) {
+      if(is.null(perl_path)) {
+        next
+      }
+      saved_command <- com
+      args <- shQuote(com)
+      com <- perl_path
+    } else {
+      args <- character(0)
+      saved_command <- com
+    }
+
+    if(test_exiftool(com, args, quiet = quiet)) {
+      if(length(args) > 0) {
+        arg_string <- paste(" with args", paste0("`", args, "`", collapse = " "))
+      } else {
+        arg_string <- ""
+      }
+      if(!quiet) message("ExifTool found at `", com, "`", arg_string)
+
+      options(exifr.exiftoolcommand = saved_command)
       exiftool_options$command <- com
+      exiftool_options$args <- args
       if(!quiet) message("Using ExifTool version ", exiftool_version())
       return(invisible(com))
     }
@@ -72,8 +135,10 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
 
   if(is.null(install_url)) {
     # don't install!
-    warning("Could not find ExifTool at any of the following commands: ",
-         paste0("`", command, "`", collapse = ", "))
+    warning(
+      "Could not find ExifTool at any of the following locations: ",
+      paste0("`", command, "`", collapse = ", ")
+    )
     return(invisible(NULL))
   }
 
@@ -81,10 +146,12 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
     install_url <- "http://paleolimbot.github.io/exifr/exiftool.zip"
   }
 
-  message("Could not find ExifTool at any of the following commands: ",
-          paste(command, collapse = ", "),
-          ". Attempting to install from ",
-          install_url)
+  message(
+    "Could not find ExifTool at any of the following locations: ",
+    paste(command, collapse = ", "),
+    ". Attempting to install from ",
+    install_url
+  )
 
   if(is.null(install_location)) {
     # define default install locations
@@ -108,8 +175,13 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   utils::unzip(download_file, exdir = write_dir)
 
   # configure exiftool
-  invisible(configure_exiftool(file.path(write_dir, "exiftool", "exiftool.pl"),
-                               perl_path = perl_path, install_url = NULL))
+  invisible(
+    configure_exiftool(
+      file.path(write_dir, "exiftool", "exiftool.pl"),
+      perl_path = perl_path,
+      install_url = NULL
+    )
+  )
 }
 
 #' @rdname configure_exiftool
@@ -126,20 +198,22 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
     )
   }
 
-  for(p in perl_path) {
+  for(p in unique(perl_path)) {
     if(nchar(p) == 0) {
       next
     }
-    if(test_perl(paste(shQuote(p), "--version"), quiet = quiet)) {
-      if(!quiet) message("perl found at ", p)
+    if(test_perl(p, quiet = quiet)) {
+      if(!quiet) message("Perl found at `", p, "`")
       options(exifr.perlpath = p)
       return(invisible(p))
     }
   }
 
-  warning("Could not find perl at any of the following locations: ",
-       paste0("`", perl_path, "`", collapse = ", "),
-       ". Specify perl location using options(exifr.perlpath='my/path/to/perl')")
+  warning(
+    "Could not find perl at any of the following locations: ",
+    paste0("`", perl_path, "`", collapse = ", "),
+    ". Specify perl location using options(exifr.perlpath='my/path/to/perl')"
+  )
   invisible(NULL)
 }
 
@@ -147,29 +221,62 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
 #' @export
 configure_exiftool_reset <- function() {
   rm("command", envir = exiftool_options)
-  options(exifr.perlpath = NULL)
-  options(exifr.exiftoolcommand = NULL)
+  rm("args", envir = exiftool_options)
 }
 
 test_perl <- function(command, quiet = TRUE) {
   if(!quiet) message("Trying perl command: ", command)
-  suppressWarnings(suppressMessages(0==try(system(command, ignore.stdout = TRUE,
-    ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
+  test_command(command, args = "-V", return_code = 0, regex_stdout = "configuration")
 }
 
-test_exiftool <- function(command, quiet = TRUE) {
-  if(!quiet) message("Trying exiftool command: `", command, "`")
-
-  command_works <- suppressWarnings(suppressMessages(0==try(system(command, ignore.stdout = TRUE,
-                   ignore.stderr = TRUE, show.output.on.console = FALSE), silent=TRUE)))
-  if(command_works) {
-    # check that version is a numeric value like 10.111
-    ver_string <- paste(system(command, intern = TRUE), collapse = "\n")
-    ver_number <- suppressWarnings(as.numeric(ver_string))
-    return(!is.na(ver_number))
+test_exiftool <- function(command, args = character(0), quiet = TRUE) {
+  if(length(args) > 0) {
+    arg_string <- paste(" with args", paste0("`", args, "`", collapse = " "))
   } else {
+    arg_string <- ""
+  }
+
+  if(!quiet) {
+    message("Trying ExifTool at `", command, "`", arg_string)
+  }
+
+  test_command(command, c(args, "-ver"), return_code = 0, regex_stdout = "^\\s*[0-9.]+\\s*$")
+}
+
+test_command <- function(command, args = character(0), regex_stderr = NULL, regex_stdout = NULL, return_code = NULL) {
+  out <- tempfile()
+  err <- tempfile()
+  on.exit(unlink(c(out, err)))
+
+  command_out <- suppressWarnings(
+    suppressMessages(
+      try(
+        system2(command, args = args, stdout = out, stderr = err),
+        silent = TRUE
+      )
+    )
+  )
+
+  if(!is.null(regex_stderr) && !grepl(regex_stderr, paste(readLines(err), collapse = "\n"))) {
     return(FALSE)
   }
+
+  if(!is.null(regex_stdout) && !grepl(regex_stdout, paste(readLines(out), collapse = "\n"))) {
+    return(FALSE)
+  }
+
+  if(!is.null(return_code)) {
+    return(command_out == return_code)
+  }
+
+  return(!inherits(command_out, "try-error"))
+}
+
+command_stdout <- function(command, args = character(0), ...) {
+  tfile <- tempfile()
+  on.exit(unlink(tfile))
+  system2(command, args, stdout = tfile, ...)
+  paste(readLines(tfile), collapse = "\n")
 }
 
 find_writable <- function(install_location) {
@@ -182,6 +289,8 @@ find_writable <- function(install_location) {
     }
   }
 
-  stop("Could not find a writable directory in which to install ExifTool. Tried ",
-       paste0("`", install_location, "`", collapse = ", "))
+  stop(
+    "Could not find a writable directory in which to install ExifTool. Tried ",
+    paste0("`", install_location, "`", collapse = ", ")
+  )
 }

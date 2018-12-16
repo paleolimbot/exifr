@@ -102,9 +102,10 @@ read_exif <- function(path, tags = NULL, recursive = FALSE, args = NULL, quiet =
   }
 
   # initialize variables
-  path_list <- list(path)
   images_per_command <- length(path)
   commands <- exiftool_command(args = args, fnames = path)
+  ngroups <- 1
+  groups <- rep(1, length(path))
 
   while(any(nchar(commands) >= (command_length * 0.75)) && (images_per_command >= 2)) {
     # make the images per command half of previous value
@@ -115,55 +116,25 @@ read_exif <- function(path, tags = NULL, recursive = FALSE, args = NULL, quiet =
     groups <- rep(seq_len(ngroups), rep(images_per_command, ngroups))[seq_along(path)]
 
     # subdivide path into groups and generate the commands
-    commands <- purrr::map_chr(split(path, groups),
-                               ~exiftool_command(args = args, fnames = .x))
+    commands <- vapply(
+      split(path, groups),
+      function(fnames) exiftool_command(args = args, fnames = fnames),
+      character(1)
+    )
   }
 
   # ---- run the commands, read output ----
 
   if(!quiet) message("Running ", length(commands), " commands")
-  results <- lapply(commands, read_exif_base, quiet = quiet)
+  results <- lapply(split(path, groups), function(fnames) read_exif_base(args, fnames, quiet = quiet))
   tibble::as_tibble(do.call(plyr::rbind.fill, results))
 }
 
 # base function to read a single command to a df
-read_exif_base <- function(command, quiet = TRUE) {
+read_exif_base <- function(args, fnames, quiet = TRUE) {
   # run command
-  if(!quiet) message(command)
-  return_value <- system(command, intern = TRUE)
-  return_value_collapsed <- paste0(return_value, collapse = "")
+  return_value <- exiftool_call(args, fnames, intern = TRUE, quiet = quiet)
 
   # read, return the output
-  tibble::as_tibble(jsonlite::fromJSON(return_value_collapsed))
-}
-
-
-#' Call exiftool from R
-#'
-#' Uses \code{system()} to run a basic call to \code{exiftool}.
-
-#' @param args a list of non-shell quoted arguments (e.g. \code{-n -csv})
-#' @param fnames a list of filenames (\code{shQuote()} will be applied to this vector)
-#' @param intern \code{TRUE} if output should be returned as a character vector.
-#' @param quiet Suppress output of the command itself.
-#' @param ... additional arguments to be passed to \code{system()}
-#'
-#' @return The exit code if \code{intern=FALSE}, or the standard output as a character vector
-#'  if \code{intern=TRUE}.
-#' @export
-#'
-#' @examples
-#' exiftool_call()
-#' exiftool_version()
-#'
-exiftool_call <- function(args = NULL, fnames = NULL, intern = FALSE, ..., quiet = FALSE) {
-  command <- exiftool_command(args, fnames)
-  if(!quiet) message(command)
-  system(command, intern=intern, ...)
-}
-
-#' @rdname exiftool_call
-#' @export
-exiftool_version <- function() {
-  as.numeric(exiftool_call(args = "-ver", intern = TRUE, quiet = TRUE))
+  tibble::as_tibble(jsonlite::fromJSON(return_value))
 }
