@@ -36,6 +36,12 @@ test_that("Internal version of exiftool works", {
   }
 })
 
+test_that("empty strings do not pass configure_perl()", {
+  old_perl <- getOption("exifr.perlpath")
+  expect_warning(configure_perl(perl_path = ""), "Could not find perl at any of the following locations")
+  options(exifr.perlpath = old_perl)
+})
+
 test_that("empty strings do not pass configure_exiftool()", {
   old_exiftool <- getOption("exifr.exiftoolcommand")
   expect_warning(configure_exiftool(command = ""), "Could not find ExifTool at any of the following commands")

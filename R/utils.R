@@ -5,7 +5,7 @@ exiftool_options <- new.env(parent = emptyenv())
 # private helper command to generate call to exiftool
 exiftool_command <- function(args, fnames) {
   if(!("command" %in% names(exiftool_options))) {
-    stop("ExifTool not properly installed. Run configure_exiftool(quiet=FALSE) to debug.")
+    stop("ExifTool not properly configured. Run configure_exiftool(quiet=FALSE) to debug.")
   }
 
   exiftoolpath <- exiftool_options$command
@@ -43,7 +43,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
 
     # check if internal exiftool exists before testing the command
     internal_exiftool <- system.file("exiftool/exiftool.pl", package = "exifr")
-    if(internal_exiftool != "") {
+    if(internal_exiftool != "" && !is.null(perl_path)) {
       command <- c(command, paste(shQuote(perl_path), shQuote(internal_exiftool)))
     }
   } else if(length(command) == 0) {
@@ -65,6 +65,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
       if(!quiet) message("ExifTool found at ", com)
       options(exifr.exiftoolcommand = com)
       exiftool_options$command <- com
+      if(!quiet) message("Using ExifTool version ", exiftool_version())
       return(invisible(com))
     }
   }
@@ -126,6 +127,9 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
   }
 
   for(p in perl_path) {
+    if(nchar(p) == 0) {
+      next
+    }
     if(test_perl(paste(shQuote(p), "--version"), quiet = quiet)) {
       if(!quiet) message("perl found at ", p)
       options(exifr.perlpath = p)
@@ -134,7 +138,7 @@ configure_perl <- function(perl_path = NULL, quiet = FALSE) {
   }
 
   warning("Could not find perl at any of the following locations: ",
-       paste(perl_path, collapse = ", "),
+       paste0("`", perl_path, "`", collapse = ", "),
        ". Specify perl location using options(exifr.perlpath='my/path/to/perl')")
   invisible(NULL)
 }
@@ -179,5 +183,5 @@ find_writable <- function(install_location) {
   }
 
   stop("Could not find a writable directory in which to install ExifTool. Tried ",
-       paste(install_location, collapse = ", "))
+       paste0("`", install_location, "`", collapse = ", "))
 }
