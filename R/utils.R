@@ -82,6 +82,12 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
                                install_location = NULL,
                                quiet = FALSE) {
 
+  # appdir location
+  rappdir_location <- file.path(
+    rappdirs::user_data_dir(appname = "r-exifr", appauthor = "paleolimbot"),
+    "exiftool"
+  )
+
   # configure perl
   if(is.null(perl_path)) {
     perl_path <- configure_perl(quiet = quiet)
@@ -91,6 +97,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
     # use default list of possible locations
     command <- c(
       getOption("exifr.exiftoolcommand"),
+      file.path(rappdir_location, "exiftool.pl"),
       system.file("exiftool/exiftool.pl", package = "exifr"),
       "exiftool"
     )
@@ -157,7 +164,7 @@ configure_exiftool <- function(command = NULL, perl_path = NULL,
   if(is.null(install_location)) {
     # define default install locations
     install_location <- c(
-      file.path(rappdirs::user_data_dir(appname = "r-exifr", appauthor = "paleolimbot")),
+      rappdir_location,
       file.path(system.file("", package = "exifr")),
       path.expand("~/exiftool")
     )
@@ -273,11 +280,26 @@ test_command <- function(command, args = character(0), regex_stderr = NULL, rege
   return(!inherits(command_out, "try-error"))
 }
 
-command_stdout <- function(command, args = character(0), ...) {
-  tfile <- tempfile()
-  on.exit(unlink(tfile))
-  system2(command, args, stdout = tfile, ...)
-  paste(readLines(tfile), collapse = "\n")
+command_stdout <- function(command, args = character(0), ..., quiet = FALSE) {
+  output <- tempfile()
+  err <- tempfile()
+  on.exit(unlink(c(output, err)))
+
+  system2(command, args, stdout = output, stderr = err, ...)
+
+  if(file.exists(err) && !quiet) {
+    for(line in readLines(err)) {
+      if(nchar(line) > 0) {
+        message(line)
+      }
+    }
+  }
+
+  if(file.exists(output)) {
+    paste(readLines(output), collapse = "\n")
+  } else {
+    ""
+  }
 }
 
 find_writable <- function(install_location) {
