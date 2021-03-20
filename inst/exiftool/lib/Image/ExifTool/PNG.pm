@@ -27,7 +27,7 @@ use strict;
 use vars qw($VERSION $AUTOLOAD %stdCase);
 use Image::ExifTool qw(:DataAccess :Utils);
 
-$VERSION = '1.46';
+$VERSION = '1.47';
 
 sub ProcessPNG_tEXt($$$);
 sub ProcessPNG_iTXt($$$);
@@ -1259,6 +1259,8 @@ sub ProcessPNG($$)
         $et->InitWriteDirs(\%pngMap,'PNG');
         # write XMP before IDAT if we would delete it later anyway
         $earlyXMP = 1 if $$et{DEL_GROUP}{XMP};
+    } elsif ($$et{OPTIONS}{Validate}) {
+        $earlyXMP = 1;  # warn about XMP after IDAT when validating
     }
     my ($fileType, $hdrChunk, $endChunk) = @{$pngLookup{$sig}};
     $et->SetFileType($fileType);  # set the FileType tag
@@ -1442,7 +1444,7 @@ and JNG (JPEG Network Graphics) images.
 
 =head1 AUTHOR
 
-Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

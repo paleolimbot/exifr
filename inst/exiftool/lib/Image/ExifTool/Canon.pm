@@ -87,7 +87,7 @@ sub ProcessCTMD($$$);
 sub ProcessExifInfo($$$);
 sub SwapWords($);
 
-$VERSION = '4.03';
+$VERSION = '4.11';
 
 # Note: Removed 'USM' from 'L' lenses since it is redundant - PH
 # (or is it?  Ref 32 shows 5 non-USM L-type lenses)
@@ -101,7 +101,8 @@ $VERSION = '4.03';
      },
     -1 => 'n/a',
      1 => 'Canon EF 50mm f/1.8',
-     2 => 'Canon EF 28mm f/2.8',
+     2 => 'Canon EF 28mm f/2.8 or Sigma Lens',
+     2.1 => 'Sigma 24mm f/2.8 Super Wide II', #ClaudeJolicoeur
      # (3 removed in current Kamisaka list)
      3 => 'Canon EF 135mm f/2.8 Soft', #15/32
      4 => 'Canon EF 35-105mm f/3.5-4.5 or Sigma Lens', #28
@@ -143,6 +144,7 @@ $VERSION = '4.03';
     26.2 => 'Tamron SP AF 90mm f/2.8 Di Macro', #15
     26.3 => 'Tamron SP AF 180mm f/3.5 Di Macro', #15
     26.4 => 'Carl Zeiss Planar T* 50mm f/1.4', #PH
+    26.5 => 'Voigtlander APO Lanthar 125mm F2.5 SL Macro', #JR
     27 => 'Canon EF 35-80mm f/4-5.6', #32
     # 27 => 'Carl Zeiss Distagon T* 28mm f/2 ZF', #PH (must be with an adapter, because the ZF version is a Nikon mount)
     # 27 => 'EMF adapter for Canon EOS digital cameras', #50 (reports MaxFocalLength of 65535)
@@ -340,6 +342,7 @@ $VERSION = '4.03';
     180.6 => 'Sigma 24mm f/1.5 FF High-Speed Prime | 017', #IB
     180.7 => 'Sigma 50mm f/1.5 FF High-Speed Prime | 017', #IB
     180.8 => 'Sigma 85mm f/1.5 FF High-Speed Prime | 017', #IB
+    180.9 => 'Tokina Opera 50mm f/1.4 FF', #IB
     181 => 'Canon EF 100-400mm f/4.5-5.6L IS USM + 1.4x or Sigma Lens', #15
     181.1 => 'Sigma 150-600mm f/5-6.3 DG OS HSM | S + 1.4x', #50
     182 => 'Canon EF 100-400mm f/4.5-5.6L IS USM + 2x or Sigma Lens',
@@ -371,6 +374,7 @@ $VERSION = '4.03';
     198.1 => 'Zeiss Otus 55mm f/1.4 ZE', #JR (seen only on Sony camera)
     198.2 => 'Zeiss Otus 85mm f/1.4 ZE', #JR (NC)
     198.3 => 'Zeiss Milvus 25mm f/1.4', #IB
+    198.4 => 'Zeiss Otus 100mm f/1.4', #IB
     199 => 'Canon EF 28-80mm f/3.5-5.6 USM', #32
     200 => 'Canon EF 75-300mm f/4-5.6 USM', #32
     201 => 'Canon EF 28-80mm f/3.5-5.6 USM', #32
@@ -435,6 +439,8 @@ $VERSION = '4.03';
     368.2 => 'Sigma 50mm f/1.4 DG HSM | A', #50
     368.3 => 'Sigma 40mm f/1.4 DG HSM | A', #IB (018)
     368.4 => 'Sigma 60-600mm f/4.5-6.3 DG OS HSM | S', #IB (018)
+    368.5 => 'Sigma 28mm f/1.4 DG HSM | A', #IB (A019)
+    368.6 => 'Sigma 150-600mm f/5-6.3 DG OS HSM | S', #50
     # Note: LensType 488 (0x1e8) is reported as 232 (0xe8) in 7D CameraSettings
     488 => 'Canon EF-S 15-85mm f/3.5-5.6 IS USM', #PH
     489 => 'Canon EF 70-300mm f/4-5.6L IS USM', #Gerald Kapounek
@@ -454,7 +460,8 @@ $VERSION = '4.03';
     495.1 => 'Sigma 24-70mm F2.8 DG OS HSM | A', #IB (017)
     496 => 'Canon EF 200-400mm f/4L IS USM', #PH
     499 => 'Canon EF 200-400mm f/4L IS USM + 1.4x', #50
-    502 => 'Canon EF 28mm f/2.8 IS USM', #PH
+    502 => 'Canon EF 28mm f/2.8 IS USM or Tamron Lens', #PH
+    502.1 => 'Tamron 35mm f/1.8 Di VC USD (F012)', #forum9757
     503 => 'Canon EF 24mm f/2.8 IS USM', #PH
     504 => 'Canon EF 24-70mm f/4L IS USM', #PH
     505 => 'Canon EF 35mm f/2 IS USM', #PH
@@ -462,6 +469,7 @@ $VERSION = '4.03';
     507 => 'Canon EF 16-35mm f/4L IS USM', #42
     508 => 'Canon EF 11-24mm f/4L USM or Tamron Lens', #PH
     508.1 => 'Tamron 10-24mm f/3.5-4.5 Di II VC HLD', #PH (B023)
+    624 => 'Sigma 70-200mm F2.8 DG OS HSM | S', #IB (018)
     747 => 'Canon EF 100-400mm f/4.5-5.6L IS II USM or Tamron Lens', #JR
     747.1 => 'Tamron SP 150-600mm f/5-6.3 Di VC USD G2', #50
     748 => 'Canon EF 100-400mm f/4.5-5.6L IS II USM + 1.4x or Tamron Lens', #JR (1.4x Mk III)
@@ -684,6 +692,7 @@ $VERSION = '4.03';
     0x3260000 => 'PowerShot A3400 IS',
     0x3270000 => 'PowerShot A2400 IS',
     0x3280000 => 'PowerShot A2300',
+    0x3320000 => 'PowerShot S100V', #IB
     0x3330000 => 'PowerShot G15', #25
     0x3340000 => 'PowerShot SX50 HS', #25/forum8196
     0x3350000 => 'PowerShot SX160 IS',
@@ -854,6 +863,8 @@ $VERSION = '4.03';
     0x80000422 => 'EOS Rebel T100 / 4000D / 3000D', #IB (3000D in China; Kiss? - PH)
     0x80000424 => 'EOR R', #IB
     0x80000432 => 'EOS Rebel T7 / 2000D / 1500D / Kiss X90', #IB
+    0x80000433 => 'EOS RP',
+    0x80000436 => 'EOS SL3 / 250D / Kiss X10', #25
 );
 
 my %canonQuality = (
@@ -1797,8 +1808,8 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
             Name => 'ColorData8',
             SubDirectory => { TagTable => 'Image::ExifTool::Canon::ColorData8' },
         },
-        {   # (int16u[1820]) - M50 (1820) ref PH, EOS R (1824) ref IB
-            Condition => '$count == 1820 or $count == 1824',
+        {   # (int16u[1816|1820|1824]) - M50 (1820) ref PH, EOS R (1824), EOS RP, SX70 (1816) ref IB
+            Condition => '$count == 1816 or $count == 1820 or $count == 1824',
             Name => 'ColorData9',
             SubDirectory => { TagTable => 'Image::ExifTool::Canon::ColorData9' },
         },
@@ -2115,6 +2126,10 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
             60 => 'High-speed Burst HQ', #PH (C='High-speed Burst HQ', same as 59)
             61 => 'Smooth Skin', #51
             62 => 'Soft Focus', #PH (SX260,IXUS240)
+            68 => 'Food', #PH (250D)
+            84 => 'HDR Art Standard', #PH (80D)
+            85 => 'HDR Art Vivid', #PH (80D)
+            93 => 'HDR Art Bold', #PH (80D)
             # 83 - seen for EOS M3 night shot (PH)
             257 => 'Spotlight', #PH
             258 => 'Night 2', #PH
@@ -2215,6 +2230,7 @@ my %offOn = ( 0 => 'Off', 1 => 'On' );
             5 => 'Depth-of-field AE',
             6 => 'M-Dep', #PH
             7 => 'Bulb', #30
+            8 => 'Flexible-priority AE', #ArnoldVanOostrum
         },
     },
     22 => { #4
@@ -6076,8 +6092,8 @@ my %ciMaxFocal = (
             8 => 'AF Point Expansion (4 point)', #46/PH/forum6237
             9 => 'Spot AF', #46
             10 => 'AF Point Expansion (8 point)', #forum6237
-            11 => 'Flexizone Multi', #PH (NC, EOS M, live view)
-            # 12 - also "Flexizone Multi"? (PH)
+            11 => 'Flexizone Multi (49 point)', #PH (NC, EOS M, live view; 750D 49 points)
+            12 => 'Flexizone Multi (9 point)', #PH (750D, 9 points)
             13 => 'Flexizone Single', #PH (EOS M default, live view)
             14 => 'Large Zone AF', #PH/forum6237 (7DmkII)
         },
@@ -6603,6 +6619,8 @@ my %ciMaxFocal = (
             2 => '4:3',
             7 => '16:9',
             8 => '4:5',
+            12 => '3:2 (APS-H crop)', #IB
+            13 => '3:2 (APS-C crop)', #IB
         },
     },
     # (could use better names for these, or the Crop tags above, or both)
@@ -6690,7 +6708,15 @@ my %ciMaxFocal = (
     17 => { Name => 'WB_RGGBLevelsTungsten',   Format => 'int16s[4]' },
     21 => { Name => 'WB_RGGBLevelsFluorescent',Format => 'int16s[4]' },
     25 => { Name => 'WB_RGGBLevelsFlash',      Format => 'int16s[4]' },
-    29 => { Name => 'WB_RGGBLevelsCustom',     Format => 'int16s[4]' }, # (actually black levels for D60, ref IB)
+    29 => [{
+        Name => 'WB_RGGBLevelsCustom',
+        Notes => 'black levels for the D60',
+        Condition => '$$self{Model} !~ /EOS D60\b/',
+        Format => 'int16s[4]',
+    },{ # (black levels for D60, ref IB)
+        Name => 'BlackLevels',
+        Format => 'int16s[4]',
+    }],
     33 => { Name => 'WB_RGGBLevelsKelvin',     Format => 'int16s[4]' },
     37 => { Name => 'WB_RGGBBlackLevels',      Format => 'int16s[4]' }, #IB
 );
@@ -7780,7 +7806,7 @@ my %ciMaxFocal = (
     },
 );
 
-# Color data (MakerNotes tag 0x4001, count=1820) (ref PH)
+# Color data (MakerNotes tag 0x4001, count=1820,etc) (ref PH)
 %Image::ExifTool::Canon::ColorData9 = (
     %binaryDataAttrs,
     FORMAT => 'int16s',
@@ -7794,7 +7820,8 @@ my %ciMaxFocal = (
         RawConv => '$$self{ColorDataVersion} = $val',
         PrintConv => {
             16 => '16 (M50)',
-            17 => '17 (EOS R)',
+            17 => '17 (EOS R)',     # (and PowerShot SX740HS)
+            18 => '18 (EOS RP)',    # (and PowerShot SX70HS)
         },
     },
     0x47 => { Name => 'WB_RGGBLevelsAsShot',     Format => 'int16s[4]' },
@@ -8527,6 +8554,7 @@ my %filterConv = (
 
 %Image::ExifTool::Canon::CNTH = (
     GROUPS => { 0 => 'MakerNotes', 1 => 'Canon', 2 => 'Video' },
+    VARS => { IGNORE_BAD_ATOMS => 1 },
     NOTES => q{
         Canon-specific QuickTime tags found in the CNTH atom of MOV videos from some
         cameras such as the PowerShot S95.
@@ -9468,7 +9496,7 @@ Canon maker notes in EXIF information.
 
 =head1 AUTHOR
 
-Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

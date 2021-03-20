@@ -156,7 +156,7 @@ sub WritePSDirectory($$$$$)
         # it would be really difficult to delete the XMP,
         # so instead we write a blank XMP record
         $val = <<EMPTY_XMP;
-<?xpacket begin='﻿' id='W5M0MpCehiHzreSzNTczkc9d'?>
+<?xpacket begin='\xef\xbb\xbf' id='W5M0MpCehiHzreSzNTczkc9d'?>
 <x:xmpmeta xmlns:x='adobe:ns:meta/' x:xmptk='Image::ExifTool $Image::ExifTool::VERSION'>
 </x:xmpmeta>
 EMPTY_XMP
@@ -759,7 +759,7 @@ Thanks to Tim Kordick for his help testing the EPS writer.
 
 =head1 AUTHOR
 
-Copyright 2003-2018, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
