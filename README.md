@@ -3,11 +3,13 @@
 
 # exifr
 
-[![Travis-CI Build
-Status](https://travis-ci.org/paleolimbot/exifr.svg?branch=master)](https://travis-ci.org/paleolimbot/exifr)
-[![Coverage
-Status](https://img.shields.io/codecov/c/github/paleolimbot/exifr/master.svg)](https://codecov.io/github/paleolimbot/exifr?branch=master)
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/paleolimbot/exifr/workflows/R-CMD-check/badge.svg)](https://github.com/paleolimbot/exifr/actions)
 [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/exifr)](https://cran.r-project.org/package=exifr)
+[![Codecov test
+coverage](https://codecov.io/gh/paleolimbot/exifr/branch/master/graph/badge.svg)](https://codecov.io/gh/paleolimbot/exifr?branch=master)
+<!-- badges: end -->
 
 Ever needed to read in EXIF data from images or other files in R?
 [ExifTool](https://exiftool.org) by Phil Harvey is the most comprenesive

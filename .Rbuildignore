@@ -7,3 +7,4 @@
 ^data-raw$
 ^inst/exiftool$
 ^cran-comments\.md$
+^\.github$
