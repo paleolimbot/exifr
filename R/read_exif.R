@@ -5,7 +5,7 @@
 #' application, written by Phil Harvey. Depending on number of images and
 #' command-line length requirements, the command may be called multiple times.
 #'
-#' From the \href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool
+#' From the \href{https://exiftool.org}{ExifTool
 #' website}: ExifTool is a platform-independent Perl library plus a command-line
 #' application for reading, writing and editing meta information in a wide
 #' variety of files. ExifTool supports many different metadata formats including
@@ -15,7 +15,7 @@
 #' Minolta/Konica-Minolta, Motorola, Nikon, Nintendo, Olympus/Epson,
 #' Panasonic/Leica, Pentax/Asahi, Phase One, Reconyx, Ricoh, Samsung, Sanyo,
 #' Sigma/Foveon and Sony. For more information, see the
-#' \href{http://www.sno.phy.queensu.ca/~phil/exiftool/}{ExifTool website}.
+#' \href{https://exiftool.org}{ExifTool website}.
 #'
 #' Note that binary tags such as thumbnails are loaded as base64-encoded
 #' strings that start with "base64:".

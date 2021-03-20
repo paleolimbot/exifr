@@ -6,8 +6,7 @@
 \alias{exiftool_command}
 \title{Call exiftool from R}
 \usage{
-exiftool_call(args = NULL, fnames = NULL, intern = FALSE, ...,
-  quiet = FALSE)
+exiftool_call(args = NULL, fnames = NULL, intern = FALSE, ..., quiet = FALSE)
 
 exiftool_version()
 

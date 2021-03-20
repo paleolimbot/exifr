@@ -6,8 +6,13 @@
 \alias{configure_exiftool_reset}
 \title{Configure perl, ExifTool}
 \usage{
-configure_exiftool(command = NULL, perl_path = NULL, install_url = NULL,
-  install_location = NULL, quiet = FALSE)
+configure_exiftool(
+  command = NULL,
+  perl_path = NULL,
+  install_url = NULL,
+  install_location = NULL,
+  quiet = FALSE
+)
 
 configure_perl(perl_path = NULL, quiet = FALSE)
 
