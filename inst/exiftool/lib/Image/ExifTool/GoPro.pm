@@ -16,7 +16,7 @@ use vars qw($VERSION);
 use Image::ExifTool qw(:DataAccess :Utils);
 use Image::ExifTool::QuickTime;
 
-$VERSION = '1.02';
+$VERSION = '1.06';
 
 sub ProcessGoPro($$$);
 sub ProcessString($$$);
@@ -65,20 +65,23 @@ my %addUnits = (
     PROCESS_PROC => \&ProcessGoPro,
     GROUPS => { 2 => 'Camera' },
     NOTES => q{
-        Tags extracted from the GPMF box of GoPro MP4 videos, the APP6 "GoPro" segment
-        of JPEG files, and from the "gpmd" timed metadata if the ExtractEmbedded option
-        is enabled.  Many more tags exist, but are currently unknown and extracted only
-        with the -u option. Please let me know if you discover the meaning of any of
-        these unknown tags. See L<https://github.com/gopro/gpmf-parser> for details
-        about this format.
+        Tags extracted from the GPMF box of GoPro MP4 videos, the APP6 "GoPro"
+        segment of JPEG files, and from the "gpmd" timed metadata if the
+        L<ExtractEmbedded|../ExifTool.html#ExtractEmbedded> (-ee) option is enabled.  Many more tags exist, but are
+        currently unknown and extracted only with the L<Unknown|../ExifTool.html#Unknown> (-u) option. Please
+        let me know if you discover the meaning of any of these unknown tags. See
+        L<https://github.com/gopro/gpmf-parser> for details about this format.
     },
     ACCL => { #2 (gpmd)
         Name => 'Accelerometer',
         Notes => 'accelerator readings in m/s2',
         Binary => 1,
     },
+  # ANGX (GPMF-GEOC) - seen -0.05 (fmt d, Max)
+  # ANGY (GPMF-GEOC) - seen 179.9 (fmt d, Max)
+  # ANGZ (GPMF-GEOC) - seen 0.152 (fmt d, Max)
     ALLD => 'AutoLowLightDuration', #1 (gpmd) (untested)
-  # APTO (GPMF) - seen: 'RAW' (fmt c)
+  # APTO (GPMF) - seen: 'RAW', 'DYNM' (fmt c)
     ATTD => { #PH (Karma)
         Name => 'Attitude',
         # UNIT=s,rad,rad,rad,rad/s,rad/s,rad/s,
@@ -94,7 +97,7 @@ my %addUnits = (
         Binary => 1,
     },
     AUDO => 'AudioSetting', #PH (GPMF - seen: 'WIND', fmt c)
-  # AUPT (GPMF) - seen: 'N' (fmt c)
+  # AUPT (GPMF) - seen: 'N','Y' (fmt c)
     BPOS => { #PH (Karma)
         Name => 'Controller',
         Unknown => 1,
@@ -104,17 +107,15 @@ my %addUnits = (
         %addUnits,
     },
   # BRID (GPMF) - seen: 0 (fmt B)
-  # BROD (GPMF) - seen: 'ASK' (fmt c)
+  # BROD (GPMF) - seen: 'ASK','' (fmt c)
+  # CALH (GPMF-GEOC) - seen 3040 (fmt L, Max)
+  # CALW (GPMF-GEOC) - seen 4056 (fmt L, Max)
     CASN => 'CameraSerialNumber', #PH (GPMF - seen: 'C3221324545448', fmt c)
-  # CINF (GPMF) - seen: 0x67376be7709bc8876a8baf3940908618 (fmt B)
-  # CMOD (GPMF) - seen: 12,13,17 [13 time-laps video, 17 JPEG] (fmt B)
-    CYTS => { #PH (Karma)
-        Name => 'CoyoteStatus',
-        # UNIT=s,,,,,rad,rad,rad,,
-        # TYPE=LLLLLfffBB
-        # SCAL=1000 1 1 1 1 1 1 1 1 1
-        Binary => 1,
-    },
+  # CINF (GPMF) - seen: 0x67376be7709bc8876a8baf3940908618, 0xe230988539b30cf5f016627ae8fc5395,
+  #                     0x8bcbe424acc5b37d7d77001635198b3b (fmt B) (Camera INFormation?)
+  # CMOD (GPMF) - seen: 12,13,17 [12 360 video, 13 time-laps video, 17 JPEG] (fmt B)
+  # CRTX (GPMF-BACK/FRNT) - double[1]
+  # CRTY (GPMF-BACK/FRNT) - double[1]
     CSEN => { #PH (Karma)
         Name => 'CoyoteSense',
         # UNIT=s,rad/s,rad/s,rad/s,g,g,g,,,,
@@ -122,22 +123,38 @@ my %addUnits = (
         # SCAL=1000 1 1 1 1 1 1 1 1 1 1
         Binary => 1,
     },
+    CYTS => { #PH (Karma)
+        Name => 'CoyoteStatus',
+        # UNIT=s,,,,,rad,rad,rad,,
+        # TYPE=LLLLLfffBB
+        # SCAL=1000 1 1 1 1 1 1 1 1 1
+        Binary => 1,
+    },
     DEVC => { #PH (gpmd,GPMF, fmt \0)
         Name => 'DeviceContainer',
         SubDirectory => { TagTable => 'Image::ExifTool::GoPro::GPMF' },
+        # (Max) DVID=1,DVNM='Global Settings',VERS,FMWR,LINF,CINF,CASN,MINF,MUID,CMOD,MTYP,OREN,
+        #       DZOM,DZST,SMTR,PRTN,PTWB,PTSH,PTCL,EXPT,PIMX,PIMN,PTEV,RATE,SROT,ZFOV,VLTE,VLTA,
+        #       EISE,EISA,AUPT,AUDO,BROD,BRID,PVUL,PRJT,SOFF
+        # (Max) DVID='GEOC',DVNM='Geometry Calibrations',SHFX,SHFY,SHFZ,ANGX,ANGY,ANGZ,CALW,CALH
+        # (Max) DVID='BACK',DVNM='Back Lens',KLNS,CTRX,CTRY,MFOV,SFTR
+        # (Max) DVID='FRNT',DVNM='Front Lens',KLNS,CTRX,CTRY,MFOV,SFTR
+        # (Max) DVID='HLMT',DVNM='Highlights'
     },
-  # DVID (GPMF) - DeviceID; seen: 1 (fmt L), HLMT (fmt F)
+  # DVID (GPMF) - DeviceID; seen: 1 (fmt L), HLMT (fmt F), GEOC (fmt F), 'BACK' (fmt F, Max)
     DVID => { Name => 'DeviceID', Unknown => 1 }, #2 (gpmd)
-  # DVNM (GPMF) seen: 'Video Global Settings' (fmt c), 'Highlights' (fmt c)
+  # DVNM (GPMF) seen: 'Video Global Settings' (fmt c), 'Highlights' (fmt c), 'Geometry Calibrations' (Max)
   # DVNM (gpmd) seen: 'Camera' (Hero5), 'Hero6 Black' (Hero6), 'GoPro Karma v1.0' (Karma)
-    DVNM => 'DeviceName', #PH
+    DVNM => 'DeviceName', #PH (n/c)
     DZOM => { #PH (GPMF - seen: 'Y', fmt c)
         Name => 'DigitalZoom',
         PrintConv => { N => 'No', Y => 'Yes' },
     },
   # DZST (GPMF) - seen: 0 (fmt L) (something to do with digital zoom maybe?)
-  # EISA (GPMF) - seen: 'Y','N' [N was for a time-lapse video] (fmt c)
-  # EISE (GPMF) - seen: 'Y' (fmt c)
+    EISA => { #PH (GPMF) - seen: 'Y','N','HS EIS','N/A' (fmt c) [N was for a time-lapse video]
+        Name => 'ElectronicImageStabilization',
+    },
+  # EISE (GPMF) - seen: 'Y','N' (fmt c)
     EMPT => { Name => 'Empty', Unknown => 1 }, #2 (gpmd)
     ESCS => { #PH (Karma)
         Name => 'EscapeStatus',
@@ -147,7 +164,7 @@ my %addUnits = (
         Unknown => 1,
         %addUnits,
     },
-  # EXPT (GPMF) - seen: '' (fmt c)
+  # EXPT (GPMF) - seen: '', 'AUTO' (fmt c)
     FACE => 'FaceDetected', #PH (gpmd)
     FCNM => 'FaceNumbers', #PH (gpmd) (faces counted per frame, ref 1)
     FMWR => 'FirmwareVersion', #PH (GPMF - seen: HD6.01.01.51.00, fmt c)
@@ -213,7 +230,8 @@ my %addUnits = (
         RawConv => '$val', # necessary to use scaled value instead of raw data as subdir data
         SubDirectory => { TagTable => 'Image::ExifTool::GoPro::KBAT' },
     },
-  # LINF (GPMF) - seen: LAJ7061916601668 (fmt c)
+  # KLNS (GPMF-BACK/FRNT) - double[5] (fmt d, Max)
+  # LINF (GPMF) - seen: LAJ7061916601668,C3341326002180,C33632245450981 (fmt c) (Lens INFormation?)
     LNED => { #PH (Karma)
         Name => 'LocalPositionNED',
         # UNIT=s,m,m,m,m/s,m/s,m/s
@@ -222,12 +240,13 @@ my %addUnits = (
         Binary => 1,
     },
     MAGN => 'Magnetometer', #1 (gpmd) (units of uT)
+  # MFOV (GPMF-BACK/FRNT) - seen: 100 (fmt d, Max)
     MINF => { #PH (GPMF - seen: HERO6 Black, fmt c)
         Name => 'Model',
         Groups => { 2 => 'Camera' },
         Description => 'Camera Model Name',
     },
-  # MTYP (GPMF) - seen: 0,1,11 [1 for time-lapse video, 11 for JPEG] (fmt B)
+  # MTYP (GPMF) - seen: 0,1,5,11 [1 for time-lapse video, 5 for 360 video, 11 for JPEG] (fmt B)
   # MUID (GPMF) - seen: 3882563431 2278071152 967805802 411471936 0 0 0 0 (fmt L)
     OREN => { #PH (GPMF - seen: 'U', fmt c)
         Name => 'AutoRotation',
@@ -241,8 +260,9 @@ my %addUnits = (
     PHDR => 'HDRSetting', #PH (APP6 - seen: 0)
     PIMN => 'AutoISOMin', #PH (GPMF - seen: 100, fmt L)
     PIMX => 'AutoISOMax', #PH (GPMF - seen: 1600, fmt L)
-  # PRAW (APP6) - seen: 0
+  # PRAW (APP6) - seen: 0, 'N', 'Y' (fmt c)
     PRES => 'PhotoResolution', #PH (APP6 - seen: '12MP_W')
+  # PRJT (APP6) - seen: 'GPRO','EACO' (fmt F, Hero8, Max)
     PRTN => { #PH (GPMF - seen: 'N', fmt c)
         Name => 'ProTune',
         PrintConv => {
@@ -254,6 +274,7 @@ my %addUnits = (
     PTEV => 'ExposureCompensation', #PH (GPMF - seen: '0.0', fmt c)
     PTSH => 'Sharpness', #PH (GPMF - seen: 'HIGH', fmt c)
     PTWB => 'WhiteBalance', #PH (GPMF - seen: 'AUTO', fmt c)
+  # PVUL (APP6) - seen: 'F' (fmt c, Hero8, Max)
     RATE => 'Rate', #PH (GPMF - seen: '0_5SEC', fmt c; APP6 - seen: '4_1SEC')
     RMRK => { #2 (gpmd)
         Name => 'Comments',
@@ -270,6 +291,10 @@ my %addUnits = (
         # SCAL=1000 0.00999999977648258 0.00999999977648258 100
         %addUnits,
     },
+  # SFTR (GPMF-BACK/FRNT) - seen 0.999,1.00004 (fmt d, Max)
+  # SHFX (GPMF-GEOC) - seen 22.92 (fmt d, Max)
+  # SHFY (GPMF-GEOC) - seen 0.123 (fmt d, Max)
+  # SHFZ (GPMF-GEOC) - seen 36.06 (fmt d, Max)
     SHUT => { #2 (gpmd)
         Name => 'ExposureTimes',
         PrintConv => q{
@@ -291,6 +316,8 @@ my %addUnits = (
         ValueConv => '$self->Decode($val, "Latin")',
     },
   # SMTR (GPMF) - seen: 'N' (fmt c)
+  # SOFF (APP6) - seen: 0 (fmt L, Hero8, Max)
+  # SROT (GPMF) - seen 20.60 (fmt f, Max)
     STMP => { #1 (gpmd)
         Name => 'TimeStamp',
         ValueConv => '$val / 1e6',
@@ -333,6 +360,10 @@ my %addUnits = (
         Unknown => 1,
         ValueConv => '$self->Decode($val, "Latin")',
     },
+    VERS => {
+        Name => 'MetadataVersion',
+        PrintConv => '$val =~ tr/ /./; $val',
+    },
     VFOV => { #PH (GPMF - seen: 'W', fmt c)
         Name => 'FieldOfView',
         PrintConv => {
@@ -348,12 +379,13 @@ my %addUnits = (
         # UNIT=m/s,m/s,m,m/s,deg,%
         # TYPE=ffffsS
     },
-  # VLTE (GPMF) - seen: 'Y' (fmt c)
+  # VLTE (GPMF) - seen: 'Y','N' (fmt c)
     WBAL => 'ColorTemperatures', #PH (gpmd)
     WRGB => { #PH (gpmd)
         Name => 'WhiteBalanceRGB',
         Binary => 1,
     },
+  # ZFOV (APP6,GPMF) - seen: 148.34, 0 (fmt f, Hero8, Max)
 );
 
 # GoPro GPS5 tags (ref 2) (Hero5,Hero6)
@@ -468,8 +500,8 @@ my %addUnits = (
     GROUPS => { 2 => 'Camera' },
     PROCESS_PROC => \&Image::ExifTool::ProcessBinaryData,
     NOTES => q{
-        Tags extracted from the MP4 "fdsc" timed metadata when the ExtractEmbedded
-        option is used.
+        Tags extracted from the MP4 "fdsc" timed metadata when the L<ExtractEmbedded|../ExifTool.html#ExtractEmbedded>
+        (-ee) option is used.
     },
     0x08 => { Name => 'FirmwareVersion',    Format => 'string[15]' },
     0x17 => { Name => 'SerialNumber',       Format => 'string[16]' },
@@ -583,6 +615,7 @@ sub ProcessString($$$)
 # Process GoPro metadata (gpmd samples, GPMF box, or APP6) (ref PH/1/2)
 # Inputs: 0) ExifTool object ref, 1) dirInfo ref, 2) tag table ref
 # Returns: 1 on success
+# - with hack to check for encrypted text in gpmd data (Rove Stealth 4K)
 sub ProcessGoPro($$$)
 {
     my ($et, $dirInfo, $tagTablePtr) = @_;
@@ -613,7 +646,7 @@ sub ProcessGoPro($$$)
         next unless $size or $verbose;  # don't save empty values unless verbose
         my $format = $goProFmt{$fmt} || 'undef';
         my ($val, $i, $j, $p, @v);
-        if ($fmt eq 0x3f and defined $type) {
+        if ($fmt == 0x3f and defined $type) {
             # decode structure with format given by previous 'TYPE'
             for ($i=0; $i<$count; ++$i) {
                 my (@s, $l);
@@ -685,7 +718,7 @@ metadata from GoPro MP4 videos.
 
 =head1 AUTHOR
 
-Copyright 2003-2019, Phil Harvey (phil at owl.phy.queensu.ca)
+Copyright 2003-2021, Phil Harvey (philharvey66 at gmail.com)
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
