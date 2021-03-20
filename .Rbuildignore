@@ -8,3 +8,4 @@
 ^inst/exiftool$
 ^cran-comments\.md$
 ^\.github$
+^CRAN-RELEASE$
